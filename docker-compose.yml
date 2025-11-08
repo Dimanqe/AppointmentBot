@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: appointmentbot_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: botdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  appointmentbot:
+    build:
+      context: .
+      dockerfile: AppointmentBot/Dockerfile
+    container_name: appointmentbot_app
+    depends_on:
+      - db
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      UserBotToken: ${UserBotToken}
+      AdminBotToken: ${AdminBotToken}
+      PostgresConnection: ${PostgresConnection}
+    ports:
+      - "8080:8080"
+    restart: always
+
+volumes:
+  pgdata:

@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "AppointmentBot": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "PostgresConnection": "Host=localhost;Port=5432;Database=botdb;Username=postgres;Password=postgres;"
+      }
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
