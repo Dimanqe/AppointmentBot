@@ -16,8 +16,8 @@ services:
 
   appointmentbot:
     build:
-      context: .
-      dockerfile: AppointmentBot/Dockerfile
+      context: ./AppointmentBot
+      dockerfile: Dockerfile
     container_name: appointmentbot_app
     depends_on:
       - db

@@ -1,29 +1,18 @@
-# Use official .NET 8 runtime as base
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Use the .NET SDK image for .NET 8.0 to build the app
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-# Expose port
-EXPOSE 8080
-
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-
-# Copy csproj and restore
-COPY ["AppointmentBot/AppointmentBot.csproj", "AppointmentBot/"]
-RUN dotnet restore "AppointmentBot/AppointmentBot.csproj"
+# Copy csproj and restore as distinct layers
+COPY *.csproj ./ 
+RUN dotnet restore
 
 # Copy everything else and build
-COPY . .
-WORKDIR "/src/AppointmentBot"
-RUN dotnet publish "AppointmentBot.csproj" -c Release -o /app/publish
+COPY . ./ 
+RUN dotnet publish -c Release -o out
 
-# Final stage
-FROM base AS final
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/runtime:8.0
 WORKDIR /app
-COPY --from=build /app/publish .
-
-# Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
+COPY --from=build /app/out .
 
 ENTRYPOINT ["dotnet", "AppointmentBot.dll"]
