@@ -626,7 +626,7 @@ public class AdminBotController
 
         var now = DateTime.Now;
 
-        for (var t = start; t <= end; t = t.Add(TimeSpan.FromMinutes(180)))
+        for (var t = start; t <= end; t = t.Add(TimeSpan.FromMinutes(30)))
         {
             var slotDateTime = session.TempSlotDate.Value.Date + t;
 
