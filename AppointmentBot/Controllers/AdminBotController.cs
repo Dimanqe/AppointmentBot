@@ -56,6 +56,9 @@ public class AdminBotController
             case "show_timeslots":
                 await ShowTimeSlots(chatId);
                 return;
+            case "send_all_slots":
+                await _repository.SendAllFreeSlotsAsync(callbackQuery.Message.Chat.Id);
+                break;
             case "prev_month":
                 session.CurrentMonth = session.CurrentMonth.AddMonths(-1);
                 _adminSessionStorage.SaveSession(session);
@@ -503,6 +506,7 @@ public class AdminBotController
 
         buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("➕ Добавить окно", "add_timeslot") });
         buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("📅 Оповестить о свободных окнах", "send_all_slots") });
 
         await _adminBotClient.SendTextMessageAsync(chatId, "<b>Управление окнами</b>",
             parseMode: ParseMode.Html, replyMarkup: new InlineKeyboardMarkup(buttons));
@@ -689,6 +693,8 @@ public class AdminBotController
             replyMarkup: buttons
         );
     }
+
+
 
     #endregion
 }

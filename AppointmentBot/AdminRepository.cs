@@ -3,6 +3,7 @@
 using AppointmentBot.Data;
 using AppointmentBot.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 using Telegram.Bot;
 
 #endregion
@@ -177,4 +178,62 @@ public class AdminRepository : BotRepository
 
         return true;
     }
+    public async Task SendAllFreeSlotsAsync(long adminChatId)
+    {
+        // Получаем все свободные и активные слоты (не занятые)
+        var freeSlots = await _context.TimeSlots
+            .Where(s => s.Date >= DateTime.Today && s.IsActive && !s.IsOccupied)
+            .OrderBy(s => s.Date)
+            .ThenBy(s => s.StartTime)
+            .ToListAsync();
+
+      
+
+        // Формируем сообщение
+        var sb = new StringBuilder();
+        sb.AppendLine("📅 Свободные окошки:");
+        sb.AppendLine();
+
+        foreach (var s in freeSlots)
+            sb.AppendLine($"• {s.Date:dd.MM.yyyy} — {s.StartTime:hh\\:mm}");
+
+        sb.AppendLine();
+        sb.AppendLine("Запишитесь прямо сейчас в боте 💬");
+
+        var message = sb.ToString();
+
+        // Получаем всех пользователей
+        var users = await _context.Users.ToListAsync();
+
+        //foreach (var user in users)
+        //{
+        //    try
+        //    {
+        //        await _userBotClient.Client.SendTextMessageAsync(
+        //            chatId: user.Id,
+        //            text: message,
+        //            parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Ошибка отправки пользователю {user.Id}: {ex.Message}");
+        //    }
+        //}
+        if (freeSlots.Any())
+        {
+            await _adminBot.Client.SendTextMessageAsync(
+                chatId: _adminBot.NotificationChannel,
+                text: message
+            );
+        }
+
+        await _adminBot.Client.SendTextMessageAsync(
+            adminChatId,
+            "✅ Все свободные окна отправлены пользователям."
+        );
+    }
+
+
+
 }

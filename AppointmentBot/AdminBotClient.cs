@@ -1,10 +1,4 @@
-﻿#region
-
-using Telegram.Bot;
-
-#endregion
-
-namespace AppointmentBot;
+﻿using Telegram.Bot;
 
 public class AdminBotClient
 {
@@ -17,6 +11,9 @@ public class AdminBotClient
 
     public long AdminChatId => 6959736008;
     public long AdminChatId2 => 5200461584;
+
+    // ✅ Channel ID or username
+    public string NotificationChannel => "@AlashTestChannel"; // or "-1001234567890"
 
     public List<long> AdminChatIds => new()
     {
