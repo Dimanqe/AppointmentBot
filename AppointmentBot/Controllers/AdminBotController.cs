@@ -532,22 +532,22 @@ public class AdminBotController
         // Month navigation
         buttons.Add(new[]
         {
-            InlineKeyboardButton.WithCallbackData("⬅️", "prev_month"),
-            InlineKeyboardButton.WithCallbackData($"{month.ToString("MMMM yyyy", _ruCulture)}", "ignore"),
-            InlineKeyboardButton.WithCallbackData("➡️", "next_month")
-        });
+        InlineKeyboardButton.WithCallbackData("⬅️", "prev_month"),
+        InlineKeyboardButton.WithCallbackData($"{month.ToString("MMMM yyyy", _ruCulture)}", "ignore"),
+        InlineKeyboardButton.WithCallbackData("➡️", "next_month")
+    });
 
         // Weekday headers
         buttons.Add(new[]
         {
-            InlineKeyboardButton.WithCallbackData("Пн", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Вт", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Ср", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Чт", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Пт", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Сб", "ignore"),
-            InlineKeyboardButton.WithCallbackData("Вс", "ignore")
-        });
+        InlineKeyboardButton.WithCallbackData("Пн", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Вт", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Ср", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Чт", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Пт", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Сб", "ignore"),
+        InlineKeyboardButton.WithCallbackData("Вс", "ignore")
+    });
 
         var daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
         var firstDay = ((int)new DateTime(month.Year, month.Month, 1).DayOfWeek + 6) % 7 + 1;
@@ -560,6 +560,7 @@ public class AdminBotController
         {
             var row = new List<InlineKeyboardButton>();
             for (var dow = 1; dow <= 7; dow++)
+            {
                 if ((week == 0 && dow < firstDay) || dayCounter > daysInMonth)
                 {
                     row.Add(InlineKeyboardButton.WithCallbackData(" ", "ignore"));
@@ -571,45 +572,48 @@ public class AdminBotController
                     // Past day → mark as 🚫
                     if (date < DateTime.Today)
                     {
-                        row.Add(InlineKeyboardButton.WithCallbackData($"🚫", "ignore"));
+                        row.Add(InlineKeyboardButton.WithCallbackData("🚫", "ignore"));
+                        dayCounter++;
+                        continue;
                     }
-                    else
+
+                    var daySlots = allSlots
+                        .Where(ts => ts.Date.Date == date.Date && ts.IsActive)
+                        .Select(ts => ts.StartTime)
+                        .ToList();
+
+                    bool allOccupied = true;
+                    var start = new TimeSpan(9, 0, 0);
+                    var end = new TimeSpan(20, 0, 0);
+
+                    for (var t = start; t <= end; t = t.Add(TimeSpan.FromMinutes(30)))
                     {
-                        var daySlots = allSlots
-                            .Where(ts => ts.Date.Date == date.Date && ts.IsActive)
-                            .Select(ts => ts.StartTime)
-                            .ToList();
+                        var slotDateTime = date + t;
 
-                        var allOccupied = true;
-
-                        var start = new TimeSpan(9, 0, 0);
-                        var end = new TimeSpan(20, 0, 0);
-
-                        for (var t = start; t <= end; t = t.Add(TimeSpan.FromMinutes(180)))
+                        // Skip times in the past (today) or already occupied
+                        if (slotDateTime > now && !daySlots.Contains(t))
                         {
-                            var slotDateTime = date + t;
-                            if (slotDateTime > now && !daySlots.Contains(t))
-                            {
-                                allOccupied = false;
-                                break;
-                            }
+                            allOccupied = false;
+                            break;
                         }
-
-                        if (allOccupied)
-                            row.Add(InlineKeyboardButton.WithCallbackData($"{date.Day} 🚫", "ignore"));
-                        else
-                            row.Add(InlineKeyboardButton.WithCallbackData(date.Day.ToString(),
-                                $"admin_date_{date:yyyy-MM-dd}"));
                     }
+
+                    if (allOccupied)
+                        row.Add(InlineKeyboardButton.WithCallbackData($"{date.Day} 🚫", "ignore"));
+                    else
+                        row.Add(InlineKeyboardButton.WithCallbackData(date.Day.ToString(),
+                            $"admin_date_{date:yyyy-MM-dd}"));
 
                     dayCounter++;
                 }
+            }
 
             buttons.Add(row.ToArray());
         }
 
         return new InlineKeyboardMarkup(buttons);
     }
+
 
     private async Task ShowAdminTimePicker(long chatId, AdminSession session)
     {
