@@ -1,9 +1,10 @@
 ﻿#region
 
-using System.Text.Json;
 using AppointmentBot.Helpers;
 using AppointmentBot.Models;
 using AppointmentBot.Services;
+using System.Globalization;
+using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -19,6 +20,7 @@ public class InlineKeyboardController
     private readonly BotRepository _repository;
     private readonly IUserSessionStorage _sessionStorage;
     private readonly ITelegramBotClient _telegramClient;
+    private readonly CultureInfo _ruCulture = new("ru-RU");
 
     public InlineKeyboardController(UserBotClient userBotClient,
         IUserSessionStorage sessionStorage,
@@ -341,6 +343,7 @@ public class InlineKeyboardController
         session.SelectedServicesJson = null;
         session.SelectedDate = null;
         session.SelectedTimeSlot = null;
+        session.CurrentMonth = DateTime.Now;
         session.MenuHistory.Clear();
         session.CurrentMenu = MenuStages.Main;
 
@@ -431,8 +434,13 @@ public class InlineKeyboardController
     {
         session.CurrentMenu = MenuStages.Calendar;
 
-        var buttons = await BuildCalendarAsync(session.CurrentMonth, session); // await here
-        await MenuMessage(callbackQuery, $"<b>Выберите дату:</b>\n\n{session.CurrentMonth:MMMM yyyy}", buttons, ct);
+        var a = $"{session.CurrentMonth:MMMM yyyy}";
+        Console.WriteLine(a);
+
+    var buttons = await BuildCalendarAsync(session.CurrentMonth, session); // await here
+        await MenuMessage(callbackQuery, $"<b>Выберите дату:</b>\n\n{session.CurrentMonth.ToString("MMMM yyyy",_ruCulture) }", buttons, ct);
+
+
     }
 
     private async Task ShowTimeMenu(CallbackQuery callbackQuery, CancellationToken ct, UserSession session)
