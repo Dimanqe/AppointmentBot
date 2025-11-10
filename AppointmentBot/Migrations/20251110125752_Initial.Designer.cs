@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointmentBot.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    [Migration("20251110124646_Initial")]
+    [Migration("20251110125752_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

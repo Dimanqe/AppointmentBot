@@ -59,7 +59,6 @@ public class Program
                 });
 
                 // --- Controllers ---
-                services.AddTransient<DefaultMessageController>();
                 services.AddTransient<TextMessageController>();
                 services.AddTransient<InlineKeyboardController>();
                 services.AddTransient<AdminBotController>();
