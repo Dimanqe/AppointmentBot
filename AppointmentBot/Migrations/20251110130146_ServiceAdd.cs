@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointmentBot.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class ServiceAdd : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -149,9 +149,10 @@ namespace AppointmentBot.Migrations
                     { 2, 0, true, "Наращивание 2D", 0m },
                     { 3, 0, true, "Наращивание 3D", 0m },
                     { 4, 0, true, "Наращивание 4D", 0m },
-                    { 5, 0, true, "Наращивание \"батерфлай\"", 0m },
-                    { 6, 0, true, "Наращивание \"американка\"", 0m },
-                    { 7, 0, true, "Ламинирование ресниц", 0m }
+                    { 5, 0, true, "Наращивание 7D", 0m },
+                    { 6, 0, true, "Наращивание \"батерфлай\"", 0m },
+                    { 7, 0, true, "Наращивание \"американка\"", 0m },
+                    { 8, 0, true, "Ламинирование ресниц", 0m }
                 });
 
             migrationBuilder.CreateIndex(

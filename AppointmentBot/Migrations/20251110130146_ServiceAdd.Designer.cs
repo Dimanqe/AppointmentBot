@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointmentBot.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    [Migration("20251110125752_Initial")]
-    partial class Initial
+    [Migration("20251110130146_ServiceAdd")]
+    partial class ServiceAdd
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -170,7 +170,7 @@ namespace AppointmentBot.Migrations
                             Id = 5,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Наращивание \"батерфлай\"",
+                            Name = "Наращивание 7D",
                             Price = 0m
                         },
                         new
@@ -178,12 +178,20 @@ namespace AppointmentBot.Migrations
                             Id = 6,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Наращивание \"американка\"",
+                            Name = "Наращивание \"батерфлай\"",
                             Price = 0m
                         },
                         new
                         {
                             Id = 7,
+                            DurationMinutes = 0,
+                            IsActive = true,
+                            Name = "Наращивание \"американка\"",
+                            Price = 0m
+                        },
+                        new
+                        {
+                            Id = 8,
                             DurationMinutes = 0,
                             IsActive = true,
                             Name = "Ламинирование ресниц",
