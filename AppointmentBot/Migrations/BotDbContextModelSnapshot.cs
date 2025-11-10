@@ -143,7 +143,7 @@ namespace AppointmentBot.Migrations
                             Id = 2,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Объемное наращивание 2D",
+                            Name = "Наращивание 2D",
                             Price = 0m
                         },
                         new
@@ -151,7 +151,7 @@ namespace AppointmentBot.Migrations
                             Id = 3,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Объемное наращивание 3D",
+                            Name = "Наращивание 3D",
                             Price = 0m
                         },
                         new
@@ -159,7 +159,7 @@ namespace AppointmentBot.Migrations
                             Id = 4,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Объемное наращивание 4D",
+                            Name = "Наращивание 4D",
                             Price = 0m
                         },
                         new
@@ -167,7 +167,7 @@ namespace AppointmentBot.Migrations
                             Id = 5,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Объемное наращивание \"батерфлай\"",
+                            Name = "Наращивание \"батерфлай\"",
                             Price = 0m
                         },
                         new
@@ -175,7 +175,7 @@ namespace AppointmentBot.Migrations
                             Id = 6,
                             DurationMinutes = 0,
                             IsActive = true,
-                            Name = "Объемное наращивание \"американка\"",
+                            Name = "Наращивание \"американка\"",
                             Price = 0m
                         },
                         new

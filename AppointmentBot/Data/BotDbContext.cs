@@ -52,11 +52,11 @@ public class BotDbContext : DbContext
 
         modelBuilder.Entity<Service>().HasData(
             new Service { Id = 1, Name = "Классическое наращивание" },
-            new Service { Id = 2, Name = "Объемное наращивание 2D" },
-            new Service { Id = 3, Name = "Объемное наращивание 3D" },
-            new Service { Id = 4, Name = "Объемное наращивание 4D" },
-            new Service { Id = 5, Name = "Объемное наращивание \"батерфлай\"" },
-            new Service { Id = 6, Name = "Объемное наращивание \"американка\"" },
+            new Service { Id = 2, Name = "Наращивание 2D" },
+            new Service { Id = 3, Name = "Наращивание 3D" },
+            new Service { Id = 4, Name = "Наращивание 4D" },
+            new Service { Id = 5, Name = "Наращивание \"батерфлай\"" },
+            new Service { Id = 6, Name = "Наращивание \"американка\"" },
             new Service { Id = 7, Name = "Ламинирование ресниц" }
         );
 
