@@ -55,10 +55,10 @@ public class BotDbContext : DbContext
             new Service { Id = 2, Name = "Наращивание 2D" },
             new Service { Id = 3, Name = "Наращивание 3D" },
             new Service { Id = 4, Name = "Наращивание 4D" },
-            new Service { Id = 4, Name = "Наращивание 7D" },
-            new Service { Id = 5, Name = "Наращивание \"батерфлай\"" },
-            new Service { Id = 6, Name = "Наращивание \"американка\"" },
-            new Service { Id = 7, Name = "Ламинирование ресниц" }
+            new Service { Id = 5, Name = "Наращивание 7D" },
+            new Service { Id = 6, Name = "Наращивание \"батерфлай\"" },
+            new Service { Id = 7, Name = "Наращивание \"американка\"" },
+            new Service { Id = 8, Name = "Ламинирование ресниц" }
         );
 
         // Global DateTime type rule
