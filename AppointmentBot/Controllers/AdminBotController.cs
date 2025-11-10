@@ -571,7 +571,7 @@ public class AdminBotController
                     // Past day → mark as 🚫
                     if (date < DateTime.Today)
                     {
-                        row.Add(InlineKeyboardButton.WithCallbackData($"{date.Day} 🚫", "ignore"));
+                        row.Add(InlineKeyboardButton.WithCallbackData($"🚫", "ignore"));
                     }
                     else
                     {
