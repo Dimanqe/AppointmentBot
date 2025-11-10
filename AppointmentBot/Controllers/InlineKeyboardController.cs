@@ -343,6 +343,7 @@ public class InlineKeyboardController
         session.SelectedServicesJson = null;
         session.SelectedDate = null;
         session.SelectedTimeSlot = null;
+        session.CurrentMonth = DateTime.Now;
         session.MenuHistory.Clear();
         session.CurrentMenu = MenuStages.Main;
 
@@ -433,8 +434,11 @@ public class InlineKeyboardController
     {
         session.CurrentMenu = MenuStages.Calendar;
 
-        var buttons = await BuildCalendarAsync(session.CurrentMonth, session); // await here
-        await MenuMessage(callbackQuery, $"<b>Выберите дату:</b>\n\n{session.CurrentMonth.ToString("MMMM yyyy", _ruCulture)}", buttons, ct);
+        var a = $"{session.CurrentMonth:MMMM yyyy}";
+        Console.WriteLine(a);
+
+    var buttons = await BuildCalendarAsync(session.CurrentMonth, session); // await here
+        await MenuMessage(callbackQuery, $"<b>Выберите дату:</b>\n\n{session.CurrentMonth:MMMM yyyy}", buttons, ct);
 
 
     }
