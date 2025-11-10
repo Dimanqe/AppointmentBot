@@ -599,7 +599,7 @@ public class AdminBotController
                     }
 
                     if (allOccupied)
-                        row.Add(InlineKeyboardButton.WithCallbackData($"{date.Day} 🚫", "ignore"));
+                        row.Add(InlineKeyboardButton.WithCallbackData($"🚫", "ignore"));
                     else
                         row.Add(InlineKeyboardButton.WithCallbackData(date.Day.ToString(),
                             $"admin_date_{date:yyyy-MM-dd}"));
