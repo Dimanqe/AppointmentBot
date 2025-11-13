@@ -99,7 +99,7 @@ public class TextMessageController
 
         await _botClient.SendTextMessageAsync(
             message.Chat.Id,
-            bookingInfo + "\n💖 Спасибо за запись! Мы свяжемся с вами для подтверждения.",
+            bookingInfo + "\n💖 Спасибо за запись! Мы ждём вас!",
             parseMode: ParseMode.Html,
             replyMarkup: buttons,
             cancellationToken: ct
