@@ -50,4 +50,5 @@ public class UserSession
     public string SelectedServicesJson { get; set; } = "[]";
     public DateTime? SelectedDate { get; set; }
     public TimeSpan? SelectedTimeSlot { get; set; }
+    public bool WaitingForPhone { get; set; }
 }

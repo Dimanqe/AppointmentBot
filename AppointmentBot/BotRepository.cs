@@ -248,4 +248,33 @@ public class BotRepository
             .Where(ts => ts.IsActive && ts.Date.Date >= start.Date && ts.Date.Date <= end.Date && !ts.IsOccupied)
             .ToListAsync();
     }
+    public async Task<Models.User> GetOrCreateUserAsync(Telegram.Bot.Types.User telegramUser)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == telegramUser.Id);
+
+        if (user == null)
+        {
+            user = new Models.User
+            {
+                Id = telegramUser.Id,
+                Username = telegramUser.Username ?? $"{telegramUser.FirstName} {telegramUser.LastName}",
+                CreatedAt = DateTime.Now
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
+        return user;
+    }
+    public async Task UpdateUserPhoneAsync(long userId, string phoneNumber)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return;
+
+        user.Phone = phoneNumber;
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+    }
+
+
 }

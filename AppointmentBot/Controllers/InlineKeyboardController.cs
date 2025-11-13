@@ -17,18 +17,25 @@ namespace AppointmentBot.Controllers;
 
 public class InlineKeyboardController
 {
-    private readonly BotRepository _repository;
+   
+
+    private readonly ITelegramBotClient _botClient;
     private readonly IUserSessionStorage _sessionStorage;
-    private readonly ITelegramBotClient _telegramClient;
+    private readonly BotRepository _repository;
+    private readonly TextMessageController _textMessageController; // ✅ add this
     private readonly CultureInfo _ruCulture = new("ru-RU");
 
-    public InlineKeyboardController(UserBotClient userBotClient,
+    public InlineKeyboardController(
+        UserBotClient botClient,
         IUserSessionStorage sessionStorage,
-        BotRepository repository)
+        BotRepository repository,
+        TextMessageController textMessageController // ✅ add this
+    )
     {
-        _telegramClient = userBotClient.Client; // extract ITelegramBotClient
+        _botClient = botClient.Client;
         _sessionStorage = sessionStorage;
         _repository = repository;
+        _textMessageController = textMessageController; // ✅ store it
     }
 
     public async Task Handle(CallbackQuery callbackQuery, CancellationToken ct)
@@ -37,7 +44,7 @@ public class InlineKeyboardController
 
         if (callbackQuery.Data == "ignore")
         {
-            await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id);
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id);
             return;
         }
 
@@ -76,13 +83,13 @@ public class InlineKeyboardController
 
             if (canceled)
             {
-                await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Запись отменена!",
+                await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Запись отменена!",
                     cancellationToken: ct);
                 await ShowUserBookings(callbackQuery, ct, session);
             }
             else
             {
-                await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id, "⚠️ Не удалось отменить запись.",
+                await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "⚠️ Не удалось отменить запись.",
                     cancellationToken: ct);
             }
         }
@@ -126,7 +133,7 @@ public class InlineKeyboardController
             case "finish_booking":
                 if (!session.SelectedServices.Any())
                 {
-                    await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id,
+                    await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id,
                         "🚫 Пожалуйста, выберите хотя бы одну услугу!", cancellationToken: ct);
                     return;
                 }
@@ -140,7 +147,7 @@ public class InlineKeyboardController
             case "next_to_time":
                 if (!session.SelectedDate.HasValue)
                 {
-                    await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id,
+                    await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id,
                         "🚫 Пожалуйста, выберите дату!", cancellationToken: ct);
                     return;
                 }
@@ -168,7 +175,7 @@ public class InlineKeyboardController
             case "next_to_confirm":
                 if (!session.SelectedDate.HasValue || !session.SelectedTimeSlot.HasValue)
                 {
-                    await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id,
+                    await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id,
                         "🚫 Пожалуйста, выберите время!", cancellationToken: ct);
                     return;
                 }
@@ -181,10 +188,8 @@ public class InlineKeyboardController
 
             case "confirm_booking":
             {
-                // Fetch all available services from DB
                 var allServices = await _repository.GetAvailableServicesAsync();
 
-                // Map selected service names to their IDs
                 var serviceIds = session.SelectedServices
                     .Select(s => allServices.FirstOrDefault(db => db.Name == s)?.Id
                                  ?? throw new ArgumentException($"Unknown service: {s}"))
@@ -192,7 +197,7 @@ public class InlineKeyboardController
 
                 if (!serviceIds.Any())
                 {
-                    await _telegramClient.AnswerCallbackQueryAsync(
+                    await _botClient.AnswerCallbackQueryAsync(
                         callbackQuery.Id,
                         "🚫 Пожалуйста, выберите хотя бы одну услугу!",
                         cancellationToken: ct
@@ -200,24 +205,106 @@ public class InlineKeyboardController
                     return;
                 }
 
-                // Add booking to DB
-                await _repository.AddBookingAsync(
-                    session.UserId,
-                    1,
-                    serviceIds,
-                    session.SelectedDate!.Value,
-                    session.SelectedTimeSlot!.Value,
-                    callbackQuery.From // Pass Telegram user
-                );
+                // Fetch user
+                var user = await _repository.GetOrCreateUserAsync(callbackQuery.From);
 
-                // Update session and show confirmation
-                session.MenuHistory.Push(session.CurrentMenu);
-                session.CurrentMenu = MenuStages.ConfirmationDone;
-                _sessionStorage.SaveSession(session);
+                if (string.IsNullOrWhiteSpace(user.Phone))
+                {
+                    // Directly show ReplyKeyboard to request phone
+                    var contactKeyboard = new ReplyKeyboardMarkup(new[]
+                    {
+                        KeyboardButton.WithRequestContact("📱 Отправить номер телефона")
+                    })
+                    {
+                        ResizeKeyboard = true,
+                        OneTimeKeyboard = true
+                    };
 
-                await ShowMenu(callbackQuery, ct, session);
+                    await _botClient.SendTextMessageAsync(
+                        callbackQuery.From.Id,
+                        "📞 Пожалуйста, отправьте свой номер телефона для завершения записи (необязательно):",
+                        replyMarkup: contactKeyboard,
+                        cancellationToken: ct
+                    );
+
+                    // Optional: keep a skip option inline
+                    var skipButton = new InlineKeyboardMarkup(new[]
+                    {
+                        CreateRow(CreateButton("Пропустить", "skip_phone"))
+                    });
+
+                    await _botClient.SendTextMessageAsync(
+                        callbackQuery.From.Id,
+                        "Или можете пропустить отправку номера:",
+                        replyMarkup: skipButton,
+                        cancellationToken: ct
+                    );
+
+                    session.WaitingForPhone = true;
+                    _sessionStorage.SaveSession(session);
+                    return;
+                }
+
+
+                    // Already has phone, complete booking immediately
+                    await CompleteBooking(callbackQuery, ct, session, serviceIds);
                 return;
             }
+            case "request_contact":
+            {
+                // Show Telegram's contact sharing keyboard
+                var contactKeyboard = new ReplyKeyboardMarkup(new[]
+                {
+                    KeyboardButton.WithRequestContact("📱 Поделиться номером телефона")
+                })
+                {
+                    ResizeKeyboard = true,
+                    OneTimeKeyboard = true
+                };
+
+                await _botClient.SendTextMessageAsync(
+                    callbackQuery.From.Id,
+                    "Нажмите кнопку ниже, чтобы отправить номер:",
+                    replyMarkup: contactKeyboard,
+                    cancellationToken: ct
+                );
+
+                await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id);
+
+                session.WaitingForPhone = true;
+                _sessionStorage.SaveSession(session);
+                return;
+            }
+
+            case "skip_phone":
+            {
+                var allServices = await _repository.GetAvailableServicesAsync();
+                var serviceIds = session.SelectedServices
+                    .Select(s => allServices.FirstOrDefault(db => db.Name == s)?.Id
+                                 ?? throw new ArgumentException($"Unknown service: {s}"))
+                    .ToList();
+
+                await CompleteBooking(callbackQuery, ct, session, serviceIds);
+
+                session.WaitingForPhone = false;
+                _sessionStorage.SaveSession(session);
+
+                // Remove the Telegram ReplyKeyboard
+                var removeKeyboard = new ReplyKeyboardRemove();
+                await _botClient.SendTextMessageAsync(
+                    callbackQuery.From.Id,
+                    "Пропустили отправку номера. Продолжаем запись...",
+                    replyMarkup: removeKeyboard,
+                    cancellationToken: ct
+                );
+
+                await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id);
+                return;
+            }
+
+
+
+
 
             default:
                 await HandleDynamicSelections(callbackQuery, ct, session);
@@ -274,21 +361,27 @@ public class InlineKeyboardController
             var date = DateTime.Parse(parts[0]);
             var time = TimeSpan.Parse(parts[1]); // parse HH:mm
 
-            if (session.SelectedDate.HasValue && session.SelectedDate.Value.Date == date.Date
-                                              && session.SelectedTimeSlot.HasValue
-                                              && session.SelectedTimeSlot.Value == time)
+            if (session.SelectedDate.HasValue &&
+                session.SelectedDate.Value.Date == date.Date &&
+                session.SelectedTimeSlot.HasValue &&
+                session.SelectedTimeSlot.Value == time)
             {
                 session.SelectedTimeSlot = null; // deselect if already selected
             }
             else
             {
                 session.SelectedDate = date;
-                session.SelectedTimeSlot = time; // store as TimeSpan?
+                session.SelectedTimeSlot = time; // store as TimeSpan
             }
 
             _sessionStorage.SaveSession(session);
-            await ShowMenu(callbackQuery, ct, session);
+            await ShowMenu(callbackQuery, ct, session); // refresh inline keyboard
+
+         
+
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id); // close spinner
         }
+
     }
 
     private async Task ShowMenu(CallbackQuery callbackQuery, CancellationToken ct, UserSession session)
@@ -449,7 +542,7 @@ public class InlineKeyboardController
 
         if (!session.SelectedDate.HasValue)
         {
-            await _telegramClient.AnswerCallbackQueryAsync(callbackQuery.Id,
+            await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id,
                 "🚫 Сначала выберите дату!", cancellationToken: ct);
             return;
         }
@@ -588,7 +681,7 @@ public class InlineKeyboardController
             }
 
             if (callbackQuery.Message?.Photo != null && callbackQuery.Message.Photo.Any())
-                await _telegramClient.EditMessageCaptionAsync(
+                await _botClient.EditMessageCaptionAsync(
                     callbackQuery.Message.Chat.Id,
                     callbackQuery.Message.MessageId,
                     text,
@@ -596,7 +689,7 @@ public class InlineKeyboardController
                     replyMarkup: replyMarkup,
                     cancellationToken: ct);
             else if (callbackQuery.Message != null)
-                await _telegramClient.EditMessageTextAsync(
+                await _botClient.EditMessageTextAsync(
                     callbackQuery.Message.Chat.Id,
                     callbackQuery.Message.MessageId,
                     text,
@@ -828,6 +921,25 @@ public class InlineKeyboardController
             .ToList();
 
         return availableSlots;
+    }
+    public async Task CompleteBooking(CallbackQuery callbackQuery, CancellationToken ct, UserSession session, List<int> serviceIds)
+    {
+        await _repository.AddBookingAsync(
+            session.UserId,
+            1,
+            serviceIds,
+            session.SelectedDate!.Value,
+            session.SelectedTimeSlot!.Value,
+            callbackQuery.From
+        );
+
+        session.MenuHistory.Push(session.CurrentMenu);
+        session.CurrentMenu = MenuStages.ConfirmationDone;
+        _sessionStorage.SaveSession(session);
+
+        
+
+            await ShowMenu(callbackQuery, ct, session);
     }
 
     #endregion
