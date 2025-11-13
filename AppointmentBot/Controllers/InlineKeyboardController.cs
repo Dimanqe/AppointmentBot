@@ -222,7 +222,8 @@ public class InlineKeyboardController
 
                     await _botClient.SendTextMessageAsync(
                         callbackQuery.From.Id,
-                        "📞 Пожалуйста, отправьте свой номер телефона для завершения записи (необязательно):",
+                        "📞 Пожалуйста, отправьте свой номер телефона для завершения записи\n" +
+                        "или можете пропустить отправку номера::",
                         replyMarkup: contactKeyboard,
                         cancellationToken: ct
                     );
@@ -235,7 +236,7 @@ public class InlineKeyboardController
 
                     await _botClient.SendTextMessageAsync(
                         callbackQuery.From.Id,
-                        "Или можете пропустить отправку номера:",
+                        "",
                         replyMarkup: skipButton,
                         cancellationToken: ct
                     );
