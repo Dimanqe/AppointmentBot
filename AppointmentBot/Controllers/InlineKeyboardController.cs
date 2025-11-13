@@ -222,24 +222,23 @@ public class InlineKeyboardController
 
                     await _botClient.SendTextMessageAsync(
                         callbackQuery.From.Id,
-                        "📞 Пожалуйста, отправьте свой номер телефона для завершения записи\n" +
-                        "или можете пропустить отправку номера::",
+                        "📞 Пожалуйста, отправьте свой номер телефона для завершения записи:",
                         replyMarkup: contactKeyboard,
                         cancellationToken: ct
                     );
 
                     // Optional: keep a skip option inline
-                    var skipButton = new InlineKeyboardMarkup(new[]
-                    {
-                        CreateRow(CreateButton("Пропустить", "skip_phone"))
-                    });
+                    //var skipButton = new InlineKeyboardMarkup(new[]
+                    //{
+                    //    CreateRow(CreateButton("Пропустить", "skip_phone"))
+                    //});
 
-                    await _botClient.SendTextMessageAsync(
-                        callbackQuery.From.Id,
-                        "",
-                        replyMarkup: skipButton,
-                        cancellationToken: ct
-                    );
+                    //await _botClient.SendTextMessageAsync(
+                    //    callbackQuery.From.Id,
+                    //    "Или можете пропустить отправку номера:",
+                    //    replyMarkup: skipButton,
+                    //    cancellationToken: ct
+                    //);
 
                     session.WaitingForPhone = true;
                     _sessionStorage.SaveSession(session);
