@@ -13,8 +13,8 @@ public class AdminBotClient
     public long AdminChatId2 => 5200461584;
 
     // ✅ Channel ID or username
-    //public string NotificationChannel => "@AlashTestChannel";
-    public string NotificationChannel => "@Alashcheb";
+    public string NotificationChannel => "@AlashTestChannel";
+    //public string NotificationChannel => "@Alashcheb"; 
 
     public List<long> AdminChatIds => new()
     {
