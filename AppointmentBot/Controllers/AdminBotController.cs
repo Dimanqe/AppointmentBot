@@ -142,7 +142,9 @@ public class AdminBotController
             {
                 session.TempSlotDate = date;
                 _adminSessionStorage.SaveSession(session);
-                await ShowAdminTimePicker(chatId, session);
+
+                // Pass the message ID to edit the same message
+                await ShowAdminTimePicker(chatId, session, callbackQuery.Message.MessageId);
             }
             else
             {
@@ -151,6 +153,7 @@ public class AdminBotController
 
             return;
         }
+
 
         if (callbackQuery.Data.StartsWith("admin_time_"))
         {
@@ -189,6 +192,52 @@ public class AdminBotController
 
             return;
         }
+        if (callbackQuery.Data.StartsWith("toggle_time_"))
+        {
+            var timeStr = callbackQuery.Data.Replace("toggle_time_", "");
+            if (TimeSpan.TryParseExact(timeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var time))
+            {
+                if (session.SelectedTimes.Contains(time))
+                    session.SelectedTimes.Remove(time);
+                else
+                    session.SelectedTimes.Add(time);
+
+                _adminSessionStorage.SaveSession(session);
+
+                // Refresh the same message instead of sending a new one
+                await ShowAdminTimePicker(callbackQuery.Message.Chat.Id, session, callbackQuery.Message.MessageId);
+            }
+            return;
+        }
+
+        if (callbackQuery.Data == "save_times")
+        {
+            if (session.TempSlotDate == null || !session.SelectedTimes.Any())
+            {
+                await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "❌ Выберите хотя бы один слот.");
+                return;
+            }
+
+            foreach (var time in session.SelectedTimes)
+            {
+                var newSlot = new TimeSlot
+                {
+                    Date = session.TempSlotDate.Value.Date,
+                    StartTime = time,
+                    IsActive = true
+                };
+                await _repository.AddTimeSlotAsync(newSlot);
+            }
+
+            await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Все выбранные окна добавлены!");
+            session.SelectedTimes.Clear();
+            session.TempSlotDate = null;
+            _adminSessionStorage.SaveSession(session);
+
+            await ShowTimeSlots(callbackQuery.Message.Chat.Id);
+        }
+
+
 
         // ------------------ Edit or delete existing slot ------------------ //
 
@@ -554,7 +603,8 @@ public class AdminBotController
         var dayCounter = 1;
 
         var allSlots = await _repository.GetAllTimeSlotsAsync();
-        var now = DateTime.Now;
+        var tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+        var now = TimeZoneInfo.ConvertTime(DateTime.Now, tz);
 
         for (var week = 0; week < 6; week++)
         {
@@ -615,7 +665,7 @@ public class AdminBotController
     }
 
 
-    private async Task ShowAdminTimePicker(long chatId, AdminSession session)
+    private async Task ShowAdminTimePicker(long chatId, AdminSession session, int messageId)
     {
         if (session.TempSlotDate == null)
             return;
@@ -632,49 +682,63 @@ public class AdminBotController
         var start = new TimeSpan(9, 0, 0);
         var end = new TimeSpan(20, 0, 0);
 
-        var now = DateTime.Now;
+        var tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+        var now = TimeZoneInfo.ConvertTime(DateTime.Now, tz);
 
         for (var t = start; t <= end; t = t.Add(TimeSpan.FromMinutes(30)))
         {
             var slotDateTime = session.TempSlotDate.Value.Date + t;
-
-            // Skip if time is in the past or already occupied
             if (slotDateTime <= now || occupiedTimes.Contains(t))
                 continue;
-
             possibleTimes.Add(t);
         }
 
         if (!possibleTimes.Any())
         {
-            await _adminBotClient.SendTextMessageAsync(chatId,
+            await _adminBotClient.EditMessageTextAsync(
+                chatId,
+                messageId,
                 $"🚫 Все слоты заняты или прошли для {session.TempSlotDate:dd.MM.yyyy}. Выберите другую дату.",
-                parseMode: ParseMode.Html);
+                parseMode: Telegram.Bot.Types.Enums.ParseMode.Html
+            );
             return;
         }
 
+        // Build buttons
         var buttons = new List<InlineKeyboardButton[]>();
         for (var i = 0; i < possibleTimes.Count; i += 2)
         {
             var row = new List<InlineKeyboardButton>();
             for (var j = i; j < i + 2 && j < possibleTimes.Count; j++)
             {
-                var timeStr = possibleTimes[j].ToString(@"hh\:mm");
-                row.Add(InlineKeyboardButton.WithCallbackData(timeStr, $"admin_time_{timeStr}"));
-            }
+                var time = possibleTimes[j];
+                var isSelected = session.SelectedTimes.Contains(time);
+                var timeStr = time.ToString(@"hh\:mm");
+                var buttonText = isSelected ? $"✅ {timeStr}" : timeStr;
 
+                row.Add(InlineKeyboardButton.WithCallbackData(buttonText, $"toggle_time_{timeStr}"));
+            }
             buttons.Add(row.ToArray());
         }
 
-        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "show_timeslots") });
+        // Save & Back buttons
+        buttons.Add(new[]
+        {
+        InlineKeyboardButton.WithCallbackData("💾 Сохранить", "save_times"),
+        InlineKeyboardButton.WithCallbackData("⬅️ Назад", "show_timeslots")
+    });
 
-        await _adminBotClient.SendTextMessageAsync(
+        // Edit the existing message instead of sending a new one
+        await _adminBotClient.EditMessageTextAsync(
             chatId,
-            $"<b>Выберите свободное время для {session.TempSlotDate:dd.MM.yyyy}</b>",
-            parseMode: ParseMode.Html,
+            messageId,
+            $"<b>Выберите свободное время для {session.TempSlotDate:dd.MM.yyyy}</b>\n(выбранные отмечены ✅)",
+            parseMode: Telegram.Bot.Types.Enums.ParseMode.Html,
             replyMarkup: new InlineKeyboardMarkup(buttons)
         );
     }
+
+
 
     private async Task ShowTimeSlotOptions(CallbackQuery callbackQuery, int slotId)
     {

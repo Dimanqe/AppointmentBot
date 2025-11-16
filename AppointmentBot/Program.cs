@@ -23,6 +23,9 @@ public class Program
         Console.WriteLine("✅ Telegram bots service started...");
         await host.RunAsync();
         Console.WriteLine("🛑 Telegram bots service stopped.");
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+        DateTime now = TimeZoneInfo.ConvertTime(DateTime.Now, tz);
+
     }
 
     public static IHostBuilder CreateHostBuilder(string[] args)

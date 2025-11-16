@@ -18,4 +18,7 @@ public class AdminSession
 
     // --- NEW: For calendar navigation ---
     public DateTime CurrentMonth { get; set; } = DateTime.Today;
+
+    public List<TimeSpan> SelectedTimes { get; set; } = new();
+    public int? TempTimePickerMessageId { get; set; }
 }
