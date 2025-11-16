@@ -1,8 +1,10 @@
 ﻿#region
 
-using System.Globalization;
 using AppointmentBot.Models;
 using AppointmentBot.Services;
+using Microsoft.Extensions.Options;
+using System.Globalization;
+using AppointmentBot.Configuration;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -18,20 +20,45 @@ public class AdminBotController
     private readonly IAdminSessionStorage _adminSessionStorage;
     private readonly AdminRepository _repository;
     private readonly CultureInfo _ruCulture = new("ru-RU");
+    private readonly List<long> _admins;
 
-    public AdminBotController(AdminBotClient adminBotClient,
+    public AdminBotController(
+        AdminBotClient adminBotClient,
         AdminRepository repository,
         IAdminSessionStorage adminSessionStorage)
     {
         _adminBotClient = adminBotClient.Client;
         _repository = repository;
         _adminSessionStorage = adminSessionStorage;
+
+        _admins = adminBotClient.AdminChatIds;
     }
+
 
     #region CallbackQuery Handling
 
     public async Task Handle(CallbackQuery callbackQuery, CancellationToken ct)
     {
+        if (!_admins.Contains(callbackQuery.From.Id))
+        {
+            await _adminBotClient.AnswerCallbackQueryAsync(
+                callbackQuery.Id,
+                "⛔ У вас нет доступа."
+            );
+
+            // Optional: delete button message
+            try
+            {
+                await _adminBotClient.DeleteMessageAsync(
+                    callbackQuery.Message.Chat.Id,
+                    callbackQuery.Message.MessageId
+                );
+            }
+            catch { }
+
+            return;
+        }
+
         if (callbackQuery?.Data == null || callbackQuery.Message == null) return;
 
         var chatId = callbackQuery.Message.Chat.Id;
@@ -263,6 +290,14 @@ public class AdminBotController
 
     public async Task HandleAdminMessage(Message message, CancellationToken ct)
     {
+        if (!_admins.Contains(message.From.Id))
+        {
+            await _adminBotClient.SendTextMessageAsync(
+                message.Chat.Id,
+                "⛔ Доступ запрещён. Этот бот только для админов."
+            );
+            return;
+        }
         if (message?.Text == null) return;
 
         var chatId = message.Chat.Id;
