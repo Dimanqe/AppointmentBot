@@ -10,12 +10,18 @@ using Telegram.Bot;
 
 namespace AppointmentBot;
 
-public class AdminRepository : BotRepository
+public class AdminRepository
 {
+    private readonly BotDbContext _context;
+    private readonly AdminBotClient _adminBot;
+    private readonly UserBotClient _userBotClient;
     public AdminRepository(BotDbContext context, AdminBotClient adminBot, UserBotClient userBotClient)
-        : base(context, adminBot, userBotClient)
     {
+        _context = context;
+        _adminBot = adminBot;
+        _userBotClient = userBotClient;
     }
+
 
     // --- Service management ---
     public async Task<Service> AddServiceAsync(Service service)
@@ -33,6 +39,14 @@ public class AdminRepository : BotRepository
         service.Price = newPrice;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<Service>> GetAvailableServicesAsync()
+    {
+        return await _context.Services
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.Id)
+            .ToListAsync();
     }
 
     public async Task<Service?> GetServiceByIdAsync(int serviceId)
@@ -127,6 +141,16 @@ public class AdminRepository : BotRepository
 
         return await Task.FromResult(times);
     }
+    // ✅ Get a single booking by ID
+    public async Task<Booking?> GetBookingByIdAsync(int bookingId)
+    {
+        return await _context.Bookings
+            .Include(b => b.User)
+            .Include(b => b.Master)
+            .Include(b => b.BookingServices)
+            .ThenInclude(bs => bs.Service)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+    }
 
     public new async Task<bool> CancelBookingAsync(int bookingId)
     {
@@ -178,18 +202,16 @@ public class AdminRepository : BotRepository
 
         return true;
     }
+    private int? _lastChannelMessageId; // store somewhere persistent if needed
+
     public async Task SendAllFreeSlotsAsync(long adminChatId)
     {
-        // Получаем все свободные и активные слоты (не занятые)
         var freeSlots = await _context.TimeSlots
             .Where(s => s.Date >= DateTime.Today && s.IsActive && !s.IsOccupied)
             .OrderBy(s => s.Date)
             .ThenBy(s => s.StartTime)
             .ToListAsync();
 
-      
-
-        // Формируем сообщение
         var sb = new StringBuilder();
         sb.AppendLine("📅 Свободные окошки:");
         sb.AppendLine();
@@ -202,37 +224,82 @@ public class AdminRepository : BotRepository
 
         var message = sb.ToString();
 
-        // Получаем всех пользователей
-        var users = await _context.Users.ToListAsync();
-
-        //foreach (var user in users)
-        //{
-        //    try
-        //    {
-        //        await _userBotClient.Client.SendTextMessageAsync(
-        //            chatId: user.Id,
-        //            text: message,
-        //            parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown
-        //        );
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Ошибка отправки пользователю {user.Id}: {ex.Message}");
-        //    }
-        //}
-        if (freeSlots.Any())
+        if (!freeSlots.Any())
         {
+            message = "📅 Свободные окошки закончились.";
             await _adminBot.Client.SendTextMessageAsync(
-                chatId: _adminBot.NotificationChannel,
-                text: message
+                adminChatId,
+               message
             );
         }
 
+        int? lastMessageId = await GetLastChannelMessageIdAsync(adminChatId);
+
+        try
+        {
+            if (lastMessageId.HasValue)
+            {
+                // Admin-specific edit
+                await _adminBot.Client.EditMessageTextAsync(
+                    chatId: _adminBot.NotificationChannel,
+                    messageId: lastMessageId.Value,
+                    text: message
+                );
+            }
+            else
+            {
+                // No message yet — create new
+                var sent = await _adminBot.Client.SendTextMessageAsync(
+                    _adminBot.NotificationChannel,
+                    message
+                );
+
+                await SetLastChannelMessageIdAsync(adminChatId, sent.MessageId);
+            }
+        }
+        catch
+        {
+            var sent = await _adminBot.Client.SendTextMessageAsync(
+                _adminBot.NotificationChannel,
+                message
+            );
+
+            await SetLastChannelMessageIdAsync(adminChatId, sent.MessageId);
+        }
+
+
+
         await _adminBot.Client.SendTextMessageAsync(
             adminChatId,
-            "✅ Все свободные окна отправлены пользователям."
+            "✅ Сообщение в канале обновлено."
         );
     }
+
+
+
+    private async Task<int?> GetLastChannelMessageIdAsync(long adminId)
+    {
+        var settings = await _context.BotSettings.FirstOrDefaultAsync(s => s.AdminId == adminId);
+        return settings?.LastChannelMessageId;
+    }
+
+
+    private async Task SetLastChannelMessageIdAsync(long adminId, int messageId)
+    {
+        var settings = await _context.BotSettings.FirstOrDefaultAsync(s => s.AdminId == adminId);
+
+        if (settings == null)
+        {
+            settings = new BotSettings { AdminId = adminId };
+            _context.BotSettings.Add(settings);
+        }
+
+        settings.LastChannelMessageId = messageId;
+        await _context.SaveChangesAsync();
+    }
+
+
+
 
 
 

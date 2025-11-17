@@ -19,6 +19,7 @@ public class BotDbContext : DbContext
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<TimeSlot> TimeSlots { get; set; }
     public DbSet<BookingService> BookingServices { get; set; }
+    public DbSet<BotSettings> BotSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,6 +61,8 @@ public class BotDbContext : DbContext
             new Service { Id = 7, Name = "Наращивание \"американка\"" },
             new Service { Id = 8, Name = "Ламинирование ресниц" }
         );
+        modelBuilder.Entity<BotSettings>()
+            .HasKey(b => b.AdminId);
 
         // Global DateTime type rule
         foreach (var prop in modelBuilder.Model.GetEntityTypes()

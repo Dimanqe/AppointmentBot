@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointmentBot.Migrations
 {
     [DbContext(typeof(BotDbContext))]
-    [Migration("20251110130146_ServiceAdd")]
-    partial class ServiceAdd
+    [Migration("20251117120755_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -70,6 +70,22 @@ namespace AppointmentBot.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("BookingServices");
+                });
+
+            modelBuilder.Entity("AppointmentBot.Models.BotSettings", b =>
+                {
+                    b.Property<long>("AdminId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("AdminId"));
+
+                    b.Property<int?>("LastChannelMessageId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AdminId");
+
+                    b.ToTable("BotSettings");
                 });
 
             modelBuilder.Entity("AppointmentBot.Models.Master", b =>

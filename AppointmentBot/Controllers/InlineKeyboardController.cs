@@ -4,6 +4,7 @@ using AppointmentBot.Helpers;
 using AppointmentBot.Models;
 using AppointmentBot.Services;
 using System.Globalization;
+using System.Reflection.Emit;
 using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -762,7 +763,7 @@ public class InlineKeyboardController
                     if (!slotsForDate.Any() || date < DateTime.Today)
                     {
                         // No available slots or past day
-                        row.Add(CreateButton("❌", "ignore"));
+                        row.Add(CreateButton( $"🚫{dayCounter.ToString()}", "ignore"));
                     }
                     else
                     {

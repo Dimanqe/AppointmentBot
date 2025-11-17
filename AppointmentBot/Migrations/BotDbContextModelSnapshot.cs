@@ -69,6 +69,22 @@ namespace AppointmentBot.Migrations
                     b.ToTable("BookingServices");
                 });
 
+            modelBuilder.Entity("AppointmentBot.Models.BotSettings", b =>
+                {
+                    b.Property<long>("AdminId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("AdminId"));
+
+                    b.Property<int?>("LastChannelMessageId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AdminId");
+
+                    b.ToTable("BotSettings");
+                });
+
             modelBuilder.Entity("AppointmentBot.Models.Master", b =>
                 {
                     b.Property<int>("Id")

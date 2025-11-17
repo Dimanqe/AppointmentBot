@@ -9,11 +9,24 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AppointmentBot.Migrations
 {
     /// <inheritdoc />
-    public partial class ServiceAdd : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "BotSettings",
+                columns: table => new
+                {
+                    AdminId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    LastChannelMessageId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BotSettings", x => x.AdminId);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Masters",
                 columns: table => new
@@ -176,6 +189,9 @@ namespace AppointmentBot.Migrations
         {
             migrationBuilder.DropTable(
                 name: "BookingServices");
+
+            migrationBuilder.DropTable(
+                name: "BotSettings");
 
             migrationBuilder.DropTable(
                 name: "TimeSlots");

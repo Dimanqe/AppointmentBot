@@ -21,4 +21,10 @@ public class AdminBotClient
         AdminChatId,
         AdminChatId2
     };
+
+    public List<long> AdminChatIdsForChannelMessageUpdate => new()
+    {
+        AdminChatId,
+        //AdminChatId2
+    };
 }

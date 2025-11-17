@@ -16,11 +16,13 @@ public class BotRepository
     protected readonly BotDbContext _context;
     protected readonly UserBotClient _userBotClient;
 
+
     public BotRepository(BotDbContext context, AdminBotClient adminBot, UserBotClient userBotClient)
     {
         _context = context;
         _adminBot = adminBot;
         _userBotClient = userBotClient;
+
     }
 
     // ✅ Create booking with normalized structure
@@ -94,11 +96,20 @@ public class BotRepository
 
         try
         {
+            var adminRepo = new AdminRepository(_context, _adminBot, _userBotClient);
             foreach (var adminId in _adminBot.AdminChatIds)
+            {
                 await _adminBot.Client.SendTextMessageAsync(
                     adminId,
                     message
                 );
+            }
+
+            foreach (var adminId in _adminBot.AdminChatIdsForChannelMessageUpdate)
+            {
+                await adminRepo.SendAllFreeSlotsAsync(adminId);
+            }
+
         }
         catch (Exception ex)
         {

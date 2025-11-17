@@ -45,21 +45,26 @@ public class Program
                 services.AddSingleton<AdminBotClient>(_ => new AdminBotClient(appSettings.AdminBotToken));
 
                 // --- Repositories ---
-                services.AddScoped<BotRepository>(sp =>
-                {
-                    var db = sp.GetRequiredService<BotDbContext>();
-                    var adminBot = sp.GetRequiredService<AdminBotClient>();
-                    var userBot = sp.GetRequiredService<UserBotClient>();
-                    return new BotRepository(db, adminBot, userBot);
-                });
 
-                services.AddScoped<AdminRepository>(sp =>
-                {
-                    var db = sp.GetRequiredService<BotDbContext>();
-                    var adminBot = sp.GetRequiredService<AdminBotClient>();
-                    var userBot = sp.GetRequiredService<UserBotClient>();
-                    return new AdminRepository(db, adminBot, userBot);
-                });
+                //services.AddScoped<BotRepository>(sp =>
+                //{
+                //    var db = sp.GetRequiredService<BotDbContext>();
+                //    var adminBot = sp.GetRequiredService<AdminBotClient>();
+                //    var userBot = sp.GetRequiredService<UserBotClient>();
+                //    var adminRepository = sp.GetRequiredService<AdminRepository>();
+                //    return new BotRepository(db, adminBot, userBot);
+                //});
+
+                //services.AddScoped<AdminRepository>(sp =>
+                //{
+                //    var db = sp.GetRequiredService<BotDbContext>();
+                //    var adminBot = sp.GetRequiredService<AdminBotClient>();
+                //    var userBot = sp.GetRequiredService<UserBotClient>();
+                //    return new AdminRepository(db, adminBot, userBot);
+                //});
+
+                services.AddScoped<AdminRepository>();
+                services.AddScoped<BotRepository>();
 
                 // --- Controllers ---
                 services.AddTransient<TextMessageController>();
