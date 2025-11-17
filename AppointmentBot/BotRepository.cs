@@ -15,6 +15,7 @@ public class BotRepository
     protected readonly AdminBotClient _adminBot;
     protected readonly BotDbContext _context;
     protected readonly UserBotClient _userBotClient;
+    private readonly AdminRepository adminRepo;
 
 
     public BotRepository(BotDbContext context, AdminBotClient adminBot, UserBotClient userBotClient)
@@ -22,6 +23,7 @@ public class BotRepository
         _context = context;
         _adminBot = adminBot;
         _userBotClient = userBotClient;
+        adminRepo = new AdminRepository(_context, _adminBot, _userBotClient);
 
     }
 
@@ -96,7 +98,7 @@ public class BotRepository
 
         try
         {
-            var adminRepo = new AdminRepository(_context, _adminBot, _userBotClient);
+           
             foreach (var adminId in _adminBot.AdminChatIds)
             {
                 await _adminBot.Client.SendTextMessageAsync(
@@ -207,11 +209,16 @@ public class BotRepository
 
         try
         {
+            
             foreach (var adminId in _adminBot.AdminChatIds)
                 await _adminBot.Client.SendTextMessageAsync(
                     adminId,
                     adminMessage
                 );
+            foreach (var adminId in _adminBot.AdminChatIdsForChannelMessageUpdate)
+            {
+                await adminRepo.SendAllFreeSlotsAsync(adminId);
+            }
         }
         catch (Exception ex)
         {
