@@ -212,26 +212,40 @@ public class AdminRepository
             .ThenBy(s => s.StartTime)
             .ToListAsync();
 
+        if (!freeSlots.Any())
+        {
+            await _adminBot.Client.SendTextMessageAsync(
+                adminChatId,
+                "📅 Свободные окошки закончились."
+            );
+            return;
+        }
+
+        // Group by date
+        var groupedSlots = freeSlots
+            .GroupBy(s => s.Date.Date)
+            .OrderBy(g => g.Key);
+
+        // Weekday mapping in Russian
+        string[] weekdays = { "вс", "пн", "вт", "ср", "чт", "пт", "сб" };
+
         var sb = new StringBuilder();
         sb.AppendLine("📅 Свободные окошки:");
         sb.AppendLine();
 
-        foreach (var s in freeSlots)
-            sb.AppendLine($"• {s.Date:dd.MM.yyyy} — {s.StartTime:hh\\:mm}");
+        foreach (var group in groupedSlots)
+        {
+            var date = group.Key;
+            var weekday = weekdays[(int)date.DayOfWeek]; // DayOfWeek: Sunday=0
+
+            var times = string.Join("; ", group.Select(s => s.StartTime.ToString(@"hh\:mm")));
+            sb.AppendLine($"{date:dd.MM} ({weekday}) - {times}");
+        }
 
         sb.AppendLine();
         sb.AppendLine("Запишитесь прямо сейчас в боте 💬");
 
         var message = sb.ToString();
-
-        if (!freeSlots.Any())
-        {
-            message = "📅 Свободные окошки закончились.";
-            await _adminBot.Client.SendTextMessageAsync(
-                adminChatId,
-               message
-            );
-        }
 
         int? lastMessageId = await GetLastChannelMessageIdAsync(adminChatId);
 
@@ -239,7 +253,6 @@ public class AdminRepository
         {
             if (lastMessageId.HasValue)
             {
-                // Admin-specific edit
                 await _adminBot.Client.EditMessageTextAsync(
                     chatId: _adminBot.NotificationChannel,
                     messageId: lastMessageId.Value,
@@ -248,7 +261,6 @@ public class AdminRepository
             }
             else
             {
-                // No message yet — create new
                 var sent = await _adminBot.Client.SendTextMessageAsync(
                     _adminBot.NotificationChannel,
                     message
@@ -267,13 +279,12 @@ public class AdminRepository
             await SetLastChannelMessageIdAsync(adminChatId, sent.MessageId);
         }
 
-
-
         await _adminBot.Client.SendTextMessageAsync(
             adminChatId,
             "✅ Сообщение в канале обновлено."
         );
     }
+
 
 
 
