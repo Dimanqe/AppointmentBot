@@ -243,7 +243,7 @@ public class AdminRepository
         }
 
         sb.AppendLine();
-        sb.AppendLine("Запишитесь прямо сейчас в боте 💬");
+        sb.AppendLine("Запись: \r\nличные сообщения: @arqwh\r\nбот: https://t.me/AlashAssistantBot");
 
         var message = sb.ToString();
 
