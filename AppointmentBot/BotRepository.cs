@@ -65,7 +65,8 @@ public class BotRepository
             MasterId = masterId,
             Date = date,
             TimeSlot = time,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            ReminderSent = false
         };
 
         _context.Bookings.Add(booking);

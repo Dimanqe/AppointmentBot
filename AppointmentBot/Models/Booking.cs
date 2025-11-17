@@ -13,6 +13,7 @@ public class Booking
     public DateTime Date { get; set; } // Date of booking
     public TimeSpan TimeSlot { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool ReminderSent { get; set; }  // <-- add this
 
     public ICollection<BookingService> BookingServices { get; set; } = new List<BookingService>();
 }

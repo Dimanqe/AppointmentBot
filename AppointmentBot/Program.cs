@@ -78,6 +78,7 @@ public class Program
                 // --- Background bot services ---
                 services.AddHostedService<UserBotService>();
                 services.AddHostedService<AdminBotService>();
+                services.AddHostedService<ReminderService>();
 
             });
     }
