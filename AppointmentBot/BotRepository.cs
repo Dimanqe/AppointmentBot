@@ -242,6 +242,65 @@ public class BotRepository
 
         return true;
     }
+    public async Task<bool> CancelReminderBookingAsync(int bookingId)
+    {
+        var booking = await _context.Bookings
+            .Include(b => b.User)
+            .Include(b => b.BookingServices)
+            .ThenInclude(bs => bs.Service)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null)
+            return false;
+
+        // 🕓 Find the corresponding time slot
+        var slot = await _context.TimeSlots
+            .FirstOrDefaultAsync(ts => ts.Date == booking.Date && ts.StartTime == booking.TimeSlot);
+
+        if (slot != null)
+        {
+            slot.IsOccupied = false; // free up the slot
+            _context.TimeSlots.Update(slot);
+        }
+
+        _context.Bookings.Remove(booking); // cascade deletes BookingServices
+        await _context.SaveChangesAsync();
+
+        // Prepare message info
+        var username = string.IsNullOrWhiteSpace(booking.User.Username) ? "Не указан" : booking.User.Username;
+        var phone = string.IsNullOrWhiteSpace(booking.User.Phone) ? "Не указан" : booking.User.Phone;
+        var servicesText = booking.BookingServices.Any()
+            ? string.Join(", ", booking.BookingServices.Select(bs => bs.Service?.Name ?? "Не указано"))
+            : "Нет услуг";
+
+        // Message to admin
+        var adminMessage = "\u274c Отменена запись!\n" +
+                           $"👤 Клиент: @{username}\n" +
+                           $"📞 Телефон: {phone}\n" +
+                           $"💇 Услуга: {servicesText}\n" +
+                           $"📅 Дата: {booking.Date:dd.MM.yyyy}\n" +
+                           $"⏰ Время: {booking.TimeSlot:hh\\:mm}";
+
+        try
+        {
+
+            foreach (var adminId in _adminBot.AdminChatIds)
+                await _adminBot.Client.SendTextMessageAsync(
+                    adminId,
+                    adminMessage
+                );
+            foreach (var adminId in _adminBot.AdminChatIdsForChannelMessageUpdate)
+            {
+                await adminRepo.SendAllFreeSlotsAsync(adminId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка отправки уведомления администратору: {ex.Message}");
+        }
+
+        return true;
+    }
 
     public async Task<List<TimeSlot>> GetActiveTimeSlotsAsync(DayOfWeek dayOfWeek)
     {
@@ -294,6 +353,45 @@ public class BotRepository
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
+    public async Task<List<Booking>> GetBookingsForReminderAsync(DateTime from, DateTime to)
+    {
+        return await _context.Bookings
+            .Include(b => b.User)
+            .Include(b => b.BookingServices)
+            .ThenInclude(bs => bs.Service)
+            .Where(b => !b.ReminderSent)
+            .ToListAsync();
+    }
+    public async Task MarkReminderSentAsync(Booking booking, DateTime sentAt)
+    {
+        booking.ReminderSent = true;
+        booking.ReminderSentAt = sentAt;
+
+        _context.Bookings.Update(booking);
+        await _context.SaveChangesAsync();
+    }
+    public async Task<List<Booking>> GetBookingsForAutoCancelAsync(DateTime olderThan)
+    {
+        return await _context.Bookings
+            .Include(b => b.User)
+            .Where(b => b.ReminderSent)
+            .Where(b => !b.ReminderConfirmed)
+            .Where(b => b.ReminderSentAt < olderThan)
+            .ToListAsync();
+    }
+    public async Task AutoCancelBookingAsync(Booking booking)
+    {
+        _context.Bookings.Remove(booking);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateBookingAsync(Booking booking)
+    {
+        _context.Bookings.Update(booking);
+        await _context.SaveChangesAsync();
+    }
+
+
 
 
 }

@@ -11,6 +11,8 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #endregion
 
@@ -94,6 +96,57 @@ public class InlineKeyboardController
                     cancellationToken: ct);
             }
         }
+        // -----------------------------
+        //  Reminder actions
+        // -----------------------------
+        if (callbackQuery.Data.StartsWith("confirm_reminder") || callbackQuery.Data.StartsWith("cancel_reminder"))
+        {
+            int id = int.Parse(callbackQuery.Data.Replace("confirm_reminder", "").Replace("cancel_reminder", ""));
+            var booking = await _repository.GetBookingByIdAsync(id);
+            if (booking == null) return;
+
+            string textToSend;
+
+            if (callbackQuery.Data.StartsWith("confirm_reminder"))
+            {
+                booking.ReminderConfirmed = true;
+                await _repository.UpdateBookingAsync(booking);
+
+                textToSend = "Спасибо! Ваша запись подтверждена 👍";
+            }
+            else
+            {
+                bool canceled = await _repository.CancelReminderBookingAsync(id);
+                if (!canceled) return;
+                textToSend = "❌ Ваша запись отменена.";
+            }
+
+            // Edit message with new text and remove inline keyboard
+            var sentMessage = await _botClient.EditMessageTextAsync(
+                callbackQuery.Message.Chat.Id,
+                callbackQuery.Message.MessageId,
+                textToSend,
+                parseMode: ParseMode.Html,
+                replyMarkup: null
+            );
+
+            // Delete the message after 1 minute
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await _botClient.DeleteMessageAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId);
+                }
+                catch
+                {
+                    // Ignore if message already deleted or failed
+                }
+            });
+
+            return;
+        }
+
 
         switch (callbackQuery.Data)
         {
@@ -228,19 +281,6 @@ public class InlineKeyboardController
                         cancellationToken: ct
                     );
 
-                    // Optional: keep a skip option inline
-                    //var skipButton = new InlineKeyboardMarkup(new[]
-                    //{
-                    //    CreateRow(CreateButton("Пропустить", "skip_phone"))
-                    //});
-
-                    //await _botClient.SendTextMessageAsync(
-                    //    callbackQuery.From.Id,
-                    //    "Или можете пропустить отправку номера:",
-                    //    replyMarkup: skipButton,
-                    //    cancellationToken: ct
-                    //);
-
                     session.WaitingForPhone = true;
                     _sessionStorage.SaveSession(session);
                     return;
@@ -251,6 +291,7 @@ public class InlineKeyboardController
                     await CompleteBooking(callbackQuery, ct, session, serviceIds);
                 return;
             }
+            
             case "request_contact":
             {
                 // Show Telegram's contact sharing keyboard
@@ -303,14 +344,13 @@ public class InlineKeyboardController
                 return;
             }
 
-
-
-
-
             default:
                 await HandleDynamicSelections(callbackQuery, ct, session);
                 return;
         }
+
+       
+
     }
 
     private async Task HandleDynamicSelections(CallbackQuery callbackQuery, CancellationToken ct, UserSession session)
@@ -570,6 +610,7 @@ public class InlineKeyboardController
         await MenuMessage(callbackQuery, message, buttons, ct);
     }
 
+
     private async Task ShowFinalConfirmation(CallbackQuery callbackQuery, CancellationToken ct, UserSession session)
     {
         session.CurrentMenu = MenuStages.ConfirmationDone;
@@ -583,7 +624,6 @@ public class InlineKeyboardController
 
         await MenuMessage(callbackQuery, message, buttons, ct);
     }
-
     private async Task ShowInfoMenu(CallbackQuery callbackQuery, CancellationToken ct)
     {
         var buttons = new InlineKeyboardMarkup(new[]
@@ -664,7 +704,8 @@ public class InlineKeyboardController
         return (totalDuration, totalCost);
     }
 
-    private async Task MenuMessage(CallbackQuery callbackQuery, string text, InlineKeyboardMarkup replyMarkup,
+
+    public async Task MenuMessage(CallbackQuery callbackQuery, string text, InlineKeyboardMarkup replyMarkup,
         CancellationToken ct)
     {
         try
@@ -937,10 +978,7 @@ public class InlineKeyboardController
         session.MenuHistory.Push(session.CurrentMenu);
         session.CurrentMenu = MenuStages.ConfirmationDone;
         _sessionStorage.SaveSession(session);
-
-        
-
-            await ShowMenu(callbackQuery, ct, session);
+        await ShowMenu(callbackQuery, ct, session);
     }
 
     #endregion
