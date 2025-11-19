@@ -5,12 +5,11 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: S3cur3_P4ssw0rd_983
       POSTGRES_DB: botdb
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # ВАЖНО: порт 5432 больше не открыт наружу!
 
   appointmentbot:
     build:
@@ -24,7 +23,7 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       UserBotToken: ${UserBotToken}
       AdminBotToken: ${AdminBotToken}
-      PostgresConnection: ${PostgresConnection}
+      PostgresConnection: "Host=db;Port=5432;Username=postgres;Password=S3cur3_P4ssw0rd_983;Database=botdb"
     ports:
       - "8080:8080"
     restart: always
