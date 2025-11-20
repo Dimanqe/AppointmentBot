@@ -70,6 +70,40 @@ public class AdminBotController
             case "admin_main":
                 await ShowAdminMainMenu(callbackQuery);
                 return;
+            case "admin_settings":
+                await ShowStudioSettings(chatId);
+                return;
+
+            case "edit_studio_address":
+                session.ActionType = "edit_studio_address";
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый адрес студии:");
+                return;
+
+            case "edit_studio_name":
+                session.ActionType = "edit_studio_name";
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новое название студии:");
+                return;
+
+            case "edit_studio_phone":
+                session.ActionType = "edit_studio_phone";
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый телефон студии:");
+                return;
+
+            case "edit_studio_instagram":
+                session.ActionType = "edit_studio_instagram";
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый Instagram студии:");
+                return;
+
+            case "edit_studio_description":
+                session.ActionType = "edit_studio_description";
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новое описание студии:");
+                return;
+
             case "admin_services":
                 await ShowServices(chatId);
                 return;
@@ -310,8 +344,9 @@ public class AdminBotController
                 replyMarkup: new InlineKeyboardMarkup(new[]
                 {
                     new[] { InlineKeyboardButton.WithCallbackData("💼 Управление услугами", "admin_services") },
-                    new[] { InlineKeyboardButton.WithCallbackData("📅 Все записи", "admin_bookings") },
-                    new[] { InlineKeyboardButton.WithCallbackData("🕒 Управление окнами", "show_timeslots") }
+                    new[] { InlineKeyboardButton.WithCallbackData("📅 Просмотр всех записей", "admin_bookings") },
+                    new[] { InlineKeyboardButton.WithCallbackData("🕒 Управление окнами", "show_timeslots") },
+                    new[] { InlineKeyboardButton.WithCallbackData("⚙️ Настройки студии", "admin_settings") }
                 }));
             return;
         }
@@ -420,11 +455,105 @@ public class AdminBotController
         }
 
         // Handle other cases (editing price/duration etc.) here...
+        // ----- Studio Settings updates -----
+        switch (session.ActionType)
+        {
+            case "edit_studio_address":
+                {
+                    var studio = await _repository.GetStudioAsync();
+                    studio.Address = message.Text;
+                    await _repository.UpdateStudioAsync(studio);
+                    session.ActionType = null;
+                    _adminSessionStorage.SaveSession(session);
+                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Адрес обновлён!");
+                    await ShowStudioSettings(chatId);
+                    return;
+                }
+
+            case "edit_studio_name":
+                {
+                    var studio = await _repository.GetStudioAsync();
+                    studio.Name = message.Text;
+                    await _repository.UpdateStudioAsync(studio);
+                    session.ActionType = null;
+                    _adminSessionStorage.SaveSession(session);
+                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Название обновлено!");
+                    await ShowStudioSettings(chatId);
+                    return;
+                }
+
+            case "edit_studio_phone":
+                {
+                    var studio = await _repository.GetStudioAsync();
+                    studio.Phone = message.Text;
+                    await _repository.UpdateStudioAsync(studio);
+                    session.ActionType = null;
+                    _adminSessionStorage.SaveSession(session);
+                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Телефон обновлён!");
+                    await ShowStudioSettings(chatId);
+                    return;
+                }
+
+            case "edit_studio_instagram":
+                {
+                    var studio = await _repository.GetStudioAsync();
+                    studio.Instagram = message.Text;
+                    await _repository.UpdateStudioAsync(studio);
+                    session.ActionType = null;
+                    _adminSessionStorage.SaveSession(session);
+                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Instagram обновлён!");
+                    await ShowStudioSettings(chatId);
+                    return;
+                }
+
+            case "edit_studio_description":
+                {
+                    var studio = await _repository.GetStudioAsync();
+                    studio.Description = message.Text;
+                    await _repository.UpdateStudioAsync(studio);
+                    session.ActionType = null;
+                    _adminSessionStorage.SaveSession(session);
+                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Описание обновлено!");
+                    await ShowStudioSettings(chatId);
+                    return;
+                }
+        }
+
     }
 
     #endregion
 
     #region Admin Menus & Services
+    private async Task ShowStudioSettings(long chatId)
+    {
+        var studio = await _repository.GetStudioAsync();
+
+        var text =
+            "<b>Настройки студии</b>\n\n" +
+            $"🏷 Название: {studio.Name}\n" +
+            $"📍 Адрес: {studio.Address}\n" +
+            $"📞 Телефон: {studio.Phone}\n" +
+            $"📸 Instagram: {studio.Instagram}\n" +
+            $"📝 Описание: {studio.Description}";
+
+        var buttons = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData("📍 Изменить адрес", "edit_studio_address") },
+            new[] { InlineKeyboardButton.WithCallbackData("🏷 Изменить название студии", "edit_studio_name") },
+            new[] { InlineKeyboardButton.WithCallbackData("📞 Изменить телефон", "edit_studio_phone") },
+            new[] { InlineKeyboardButton.WithCallbackData("📸 Изменить Instagram", "edit_studio_instagram") },
+            new[] { InlineKeyboardButton.WithCallbackData("📝 Изменить описание", "edit_studio_description") },
+            new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "admin_main") }
+        });
+
+        await _adminBotClient.SendTextMessageAsync(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.Html,
+            replyMarkup: buttons
+        );
+    }
+
 
     private async Task ShowAdminMainMenu(CallbackQuery callbackQuery)
     {

@@ -308,6 +308,36 @@ public class AdminRepository
         settings.LastChannelMessageId = messageId;
         await _context.SaveChangesAsync();
     }
+    // ✅ Get studio (assume only 1 studio exists)
+    public async Task<Studio> GetStudioAsync()
+    {
+        var studio = await _context.Studios.FirstOrDefaultAsync();
+        if (studio == null)
+        {
+            studio = new Studio();
+            _context.Studios.Add(studio);
+            await _context.SaveChangesAsync();
+        }
+        return studio;
+    }
+
+    // ✅ Update studio information
+    public async Task<bool> UpdateStudioAsync(Studio studio)
+    {
+        var existing = await _context.Studios.FirstOrDefaultAsync(s => s.Id == studio.Id);
+        if (existing == null)
+            return false;
+
+        existing.Name = studio.Name;
+        existing.Address = studio.Address;
+        existing.Phone = studio.Phone;
+        existing.Instagram = studio.Instagram;
+        existing.Description = studio.Description;
+
+        _context.Studios.Update(existing);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
 
 

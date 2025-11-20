@@ -56,6 +56,7 @@ public class InlineKeyboardController
 
         if (callbackQuery.Data.StartsWith("booking_"))
         {
+            
             var bookingId = int.Parse(callbackQuery.Data.Replace("booking_", ""));
             var booking = await _repository.GetBookingByIdAsync(bookingId);
             if (booking == null)
@@ -657,6 +658,7 @@ public class InlineKeyboardController
     // Updated async version of FormatBookingInfo
     private async Task<string> FormatBookingInfoAsync(UserSession session)
     {
+        var studio = await _repository.GetStudioAsync();
         // Calculate total duration and cost from DB
         var (totalDuration, totalCost) = await CalculateBookingSummaryAsync(session);
 
@@ -670,10 +672,10 @@ public class InlineKeyboardController
             : "не выбрано";
 
         return
-            "💖 <b>Информация о записи</b>\n\n" +
-            "📍 Студия: A.lash\n" +
-            "👩‍🎨 Мастер: Арина\n" +
-            "🏠 Адрес: онлайн\n\n" +
+            $"💖 <b>Информация о записи</b>\n\n" +
+            $"🏠 Студия: {studio.Name}\n" +
+            $"👩‍🎨 Мастер: Арина\n" +
+            $"📍 Адрес: {studio.Address}\n" +
             $"⏱️ Продолжительность: {totalDuration.Hours} ч. {totalDuration.Minutes} м.\n" +
             $"💰 Стоимость: {totalCost}₽\n\n" +
             $"🧾 Услуги: {services}\n" +

@@ -12,7 +12,7 @@ public class BotDbContext : DbContext
     public BotDbContext(DbContextOptions<BotDbContext> options) : base(options)
     {
     }
-
+    public DbSet<Studio> Studios { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Master> Masters { get; set; }
     public DbSet<Service> Services { get; set; }
@@ -23,6 +23,18 @@ public class BotDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Studio>().HasData(
+            new Studio
+            {
+                Id = 1,
+                Name = "Студия красоты",
+                Address = "Адрес не указан",
+                Phone = "Телефон не указан",
+                Instagram = "",
+                Description = ""
+            }
+        );
+
         // Composite key for join table
         modelBuilder.Entity<BookingService>()
             .HasKey(bs => new { bs.BookingId, bs.ServiceId });

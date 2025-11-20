@@ -390,6 +390,19 @@ public class BotRepository
         _context.Bookings.Update(booking);
         await _context.SaveChangesAsync();
     }
+    // 🔹 Get the only studio (Id = 1)
+    public async Task<Studio> GetStudioAsync()
+    {
+        return await _context.Studios.FirstAsync(s => s.Id == 1);
+    }
+
+    // 🔹 Update studio (address, name, phone, etc.)
+    public async Task UpdateStudioAsync(Studio studio)
+    {
+        _context.Studios.Update(studio);
+        await _context.SaveChangesAsync();
+    }
+
 
 
 
