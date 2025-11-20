@@ -709,60 +709,23 @@ public class AdminBotController
     private async Task ShowTimeSlots(long chatId)
     {
         var slots = await _repository.GetAllTimeSlotsAsync();
-        if (!slots.Any())
+        var buttons = slots.Select(ts =>
         {
-            await _adminBotClient.SendTextMessageAsync(chatId, "Окон пока нет.");
-            return;
-        }
-
-        // Группировка по дате
-        var grouped = slots
-            .OrderBy(s => s.Date)
-            .ThenBy(s => s.StartTime)
-            .GroupBy(s => s.Date);
-
-        foreach (var group in grouped)
-        {
-            var date = group.Key.ToString("dd.MM.yyyy");
-            var lines = $"<b>{date}</b>\n";
-
-            var buttons = new List<InlineKeyboardButton[]>();
-
-            foreach (var slot in group)
+            return new[]
             {
-                var count = await _repository.GetBookingCountForSlotAsync(slot.Date, slot.StartTime);
+                InlineKeyboardButton.WithCallbackData(
+                    $"{ts.Date:dd.MM.yyyy} {ts.StartTime:hh\\:mm} {(ts.IsActive ? "✅" : "❌")}",
+                    $"edit_timeslot_{ts.Id}")
+            };
+        }).ToList();
 
-                string label = count == 0
-                    ? $"{slot.StartTime:hh\\:mm} — свободное"
-                    : $"{slot.StartTime:hh\\:mm} — есть брони ({count})";
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("➕ Добавить окно", "add_timeslot") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("📅 Оповестить о свободных окнах", "send_all_slots") });
 
-                buttons.Add(new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(label, $"edit_timeslot_{slot.Id}")
-                });
-            }
-
-            await _adminBotClient.SendTextMessageAsync(
-                chatId,
-                lines,
-                parseMode: ParseMode.Html,
-                replyMarkup: new InlineKeyboardMarkup(buttons)
-            );
-        }
-
-        // Buttons at the bottom
-        await _adminBotClient.SendTextMessageAsync(
-            chatId,
-            "Дополнительно:",
-            replyMarkup: new InlineKeyboardMarkup(new[]
-            {
-                new[] { InlineKeyboardButton.WithCallbackData("➕ Добавить окно", "add_timeslot") },
-                new[] { InlineKeyboardButton.WithCallbackData("📅 Оповестить о свободных окнах", "send_all_slots") },
-                new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") }
-            })
-        );
+        await _adminBotClient.SendTextMessageAsync(chatId, "<b>Управление окнами</b>",
+            parseMode: ParseMode.Html, replyMarkup: new InlineKeyboardMarkup(buttons));
     }
-
 
     private async Task ShowAdminCalendar(long chatId, AdminSession session)
     {
@@ -941,6 +904,8 @@ public class AdminBotController
         );
     }
 
+
+
     private async Task ShowTimeSlotOptions(CallbackQuery callbackQuery, int slotId)
     {
         var slot = await _repository.GetTimeSlotByIdAsync(slotId);
@@ -954,23 +919,16 @@ public class AdminBotController
             new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "show_timeslots") }
         });
 
-        var count = await _repository.GetBookingCountForSlotAsync(slot.Date, slot.StartTime);
-
-        var status = count == 0
-            ? "Свободно"
-            : $"Занято ({count})";
-
         await _adminBotClient.EditMessageTextAsync(
             chatId,
             callbackQuery.Message.MessageId,
-            $"Окно: <b>{slot.StartTime:hh\\:mm}</b>\n" +
-            $"Дата: {slot.Date:dd.MM.yyyy}\n" +
-            $"Статус: {status}",
+            $"Окно: {slot.StartTime:hh\\:mm} {(slot.IsActive ? "✅ Активно" : "❌ Неактивно")}",
             ParseMode.Html,
             replyMarkup: buttons
         );
-
     }
+
+
 
     #endregion
 }
