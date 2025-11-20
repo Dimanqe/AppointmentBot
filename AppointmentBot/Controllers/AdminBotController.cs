@@ -574,7 +574,8 @@ public class AdminBotController
         {
             new[] { InlineKeyboardButton.WithCallbackData("💼 Управление услугами", "admin_services") },
             new[] { InlineKeyboardButton.WithCallbackData("📅 Просмотр всех записей", "admin_bookings") },
-            new[] { InlineKeyboardButton.WithCallbackData("🕒 Управление окнами", "show_timeslots") }
+            new[] { InlineKeyboardButton.WithCallbackData("🕒 Управление окнами", "show_timeslots") },
+            new[] { InlineKeyboardButton.WithCallbackData("⚙️ Настройки студии", "admin_settings") }
         });
 
         await _adminBotClient.SendTextMessageAsync(chatId,
