@@ -90,6 +90,7 @@ public class Program
             UserBotToken = Environment.GetEnvironmentVariable("UserBotToken"),
             AdminBotToken = Environment.GetEnvironmentVariable("AdminBotToken"),
             PostgresConnection = Environment.GetEnvironmentVariable("PostgresConnection")
+                                 ?? "Host=localhost;Port=5432;Database=botdb;Username=postgres;Password=S3cur3_P4ssw0rd_983;"
         };
     }
 }
