@@ -44,7 +44,7 @@ public class Program
 
                 // --- Telegram bot clients ---
                 services.AddSingleton<UserBotClient>(_ => new UserBotClient(appSettings.UserBotToken));
-                services.AddSingleton<AdminBotClient>(_ => new AdminBotClient(appSettings.AdminBotToken));
+                services.AddSingleton<AdminBotClient>(_ => new AdminBotClient(appSettings.AdminBotToken, appSettings.NotificationChannel));
 
                 // --- Repositories ---
 
@@ -91,6 +91,7 @@ public class Program
         {
             UserBotToken = Environment.GetEnvironmentVariable("UserBotToken"),
             AdminBotToken = Environment.GetEnvironmentVariable("AdminBotToken"),
+            NotificationChannel = Environment.GetEnvironmentVariable("NotificationChannel"),
             PostgresConnection = Environment.GetEnvironmentVariable("PostgresConnection")
                                  ?? "Host=localhost;Port=5432;Database=botdb;Username=postgres;Password=postgres;"
         };

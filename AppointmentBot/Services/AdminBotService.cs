@@ -11,7 +11,7 @@ using Telegram.Bot.Types.Enums;
 
 #endregion
 
-namespace AppointmentBot.Services;
+namespace AppointmentBot;
 
 public class AdminBotService : BackgroundService
 {

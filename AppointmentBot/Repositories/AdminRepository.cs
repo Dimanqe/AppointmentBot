@@ -203,7 +203,6 @@ public class AdminRepository
 
         return true;
     }
-
     private int? _lastChannelMessageId; // store somewhere persistent if needed
 
     public async Task SendAllFreeSlotsAsync(long adminChatId)
@@ -287,11 +286,15 @@ public class AdminRepository
         );
     }
 
+
+
+
     private async Task<int?> GetLastChannelMessageIdAsync(long adminId)
     {
         var settings = await _context.BotSettings.FirstOrDefaultAsync(s => s.AdminId == adminId);
         return settings?.LastChannelMessageId;
     }
+
 
     private async Task SetLastChannelMessageIdAsync(long adminId, int messageId)
     {
@@ -343,7 +346,6 @@ public class AdminRepository
             .Where(b => b.Date == date.Date && b.TimeSlot == startTime)
             .CountAsync();
     }
-
 
 
 

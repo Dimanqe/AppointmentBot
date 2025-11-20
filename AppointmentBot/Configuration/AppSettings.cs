@@ -16,4 +16,5 @@ public class AppSettings
     ///     PostgreSQL connection string
     /// </summary>
     public string PostgresConnection { get; set; }
+    public string NotificationChannel { get; set; }
 }

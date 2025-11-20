@@ -25,6 +25,7 @@ services:
       UserBotToken: ${UserBotToken}
       AdminBotToken: ${AdminBotToken}
       PostgresConnection: ${PostgresConnection}
+      NotificationChannel: ${NotificationChannel}
     ports:
       - "8080:8080"
     restart: always
