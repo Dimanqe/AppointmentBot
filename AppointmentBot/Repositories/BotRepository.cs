@@ -8,7 +8,7 @@ using User = Telegram.Bot.Types.User;
 
 #endregion
 
-namespace AppointmentBot;
+namespace AppointmentBot.Repositories;
 
 public class BotRepository
 {
@@ -326,7 +326,7 @@ public class BotRepository
             .Where(ts => ts.IsActive && ts.Date.Date >= start.Date && ts.Date.Date <= end.Date && !ts.IsOccupied)
             .ToListAsync();
     }
-    public async Task<Models.User> GetOrCreateUserAsync(Telegram.Bot.Types.User telegramUser)
+    public async Task<Models.User> GetOrCreateUserAsync(User telegramUser)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == telegramUser.Id);
 

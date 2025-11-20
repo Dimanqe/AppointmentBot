@@ -1,6 +1,7 @@
-﻿using AppointmentBot;
+﻿using AppointmentBot.Clients;
 using AppointmentBot.Helpers;
 using AppointmentBot.Models;
+using AppointmentBot.Repositories;
 using AppointmentBot.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;

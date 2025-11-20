@@ -4,6 +4,7 @@ using System.Text;
 using AppointmentBot.Configuration;
 using AppointmentBot.Controllers;
 using AppointmentBot.Data;
+using AppointmentBot.Repositories;
 using AppointmentBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

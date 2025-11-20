@@ -1,4 +1,5 @@
-﻿using AppointmentBot.Data;
+﻿using AppointmentBot.Clients;
+using AppointmentBot.Data;
 using AppointmentBot.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

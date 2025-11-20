@@ -8,7 +8,7 @@ using Telegram.Bot;
 
 #endregion
 
-namespace AppointmentBot;
+namespace AppointmentBot.Repositories;
 
 public class AdminRepository
 {

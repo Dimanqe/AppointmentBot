@@ -2,6 +2,7 @@
 
 using AppointmentBot.Helpers;
 using AppointmentBot.Models;
+using AppointmentBot.Repositories;
 using AppointmentBot.Services;
 using System.Globalization;
 using System.Reflection.Emit;

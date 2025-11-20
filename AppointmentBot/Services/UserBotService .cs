@@ -10,7 +10,7 @@ using Telegram.Bot.Types.Enums;
 
 #endregion
 
-namespace AppointmentBot;
+namespace AppointmentBot.Services;
 
 public class UserBotService : BackgroundService
 {
