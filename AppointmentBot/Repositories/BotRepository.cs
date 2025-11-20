@@ -1,5 +1,6 @@
 ﻿#region
 
+using AppointmentBot.Clients;
 using AppointmentBot.Data;
 using AppointmentBot.Models;
 using Microsoft.EntityFrameworkCore;

@@ -4,7 +4,7 @@ using Telegram.Bot;
 
 #endregion
 
-namespace AppointmentBot;
+namespace AppointmentBot.Clients;
 
 public class UserBotClient
 {

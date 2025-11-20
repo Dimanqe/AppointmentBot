@@ -1,5 +1,6 @@
 ﻿#region
 
+using AppointmentBot.Clients;
 using AppointmentBot.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

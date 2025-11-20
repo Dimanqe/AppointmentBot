@@ -1,6 +1,7 @@
 ﻿#region
 
 using System.Text;
+using AppointmentBot.Clients;
 using AppointmentBot.Configuration;
 using AppointmentBot.Controllers;
 using AppointmentBot.Data;

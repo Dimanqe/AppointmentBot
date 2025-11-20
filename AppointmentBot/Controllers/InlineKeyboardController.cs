@@ -1,5 +1,6 @@
 ﻿#region
 
+using AppointmentBot.Clients;
 using AppointmentBot.Helpers;
 using AppointmentBot.Models;
 using AppointmentBot.Repositories;
