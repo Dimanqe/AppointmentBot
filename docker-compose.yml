@@ -23,7 +23,7 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       UserBotToken: ${UserBotToken}
       AdminBotToken: ${AdminBotToken}
-      PostgresConnection: "Host=db;Port=5432;Username=postgres;Password=postgres;Database=botdb"
+      PostgresConnection: "Host=db;Port=5432;Username=postgres;Password=S3cur3_P4ssw0rd_983;Database=botdb"
     ports:
       - "8080:8080"
     restart: always
