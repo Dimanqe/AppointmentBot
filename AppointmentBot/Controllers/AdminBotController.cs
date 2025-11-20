@@ -116,7 +116,7 @@ public class AdminBotController
                 await ShowAllBookings(chatId);
                 return;
             case "show_timeslots":
-                await ShowTimeSlotsAdminCalendar(chatId, session);
+                await ShowTimeSlots(chatId);
                 return;
             case "send_all_slots":
                 await _repository.SendAllFreeSlotsAsync(callbackQuery.Message.Chat.Id);
@@ -215,29 +215,6 @@ public class AdminBotController
 
             return;
         }
-        if (callbackQuery.Data.StartsWith("admin_slot_date_"))
-        {
-            Console.WriteLine($"Callback: {callbackQuery.Data}");
-            var dateStr = callbackQuery.Data.Replace("admin_slot_date_", "");
-            if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None,
-                    out var date))
-            {
-                session.TempSlotDate = date;
-                _adminSessionStorage.SaveSession(session);
-
-                // Pass the message ID to edit the same message
-                //await ShowAdminTimePicker(chatId, session, callbackQuery.Message.MessageId);
-
-                await ShowTimeSlotsForDay(chatId,date);
-            }
-            else
-            {
-                await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "🚫 Ошибка при выборе даты.");
-            }
-
-            return;
-        }
-
 
 
         if (callbackQuery.Data.StartsWith("admin_time_"))
@@ -277,7 +254,6 @@ public class AdminBotController
 
             return;
         }
-
         if (callbackQuery.Data.StartsWith("toggle_time_"))
         {
             var timeStr = callbackQuery.Data.Replace("toggle_time_", "");
@@ -579,6 +555,7 @@ public class AdminBotController
         );
     }
 
+
     private async Task ShowAdminMainMenu(CallbackQuery callbackQuery)
     {
         var chatId = callbackQuery.Message.Chat.Id;
@@ -756,8 +733,8 @@ public class AdminBotController
                 var count = await _repository.GetBookingCountForSlotAsync(slot.Date, slot.StartTime);
 
                 string label = count == 0
-                    ? $"{slot.StartTime:hh\\:mm} — свободно"
-                    : $"{slot.StartTime:hh\\:mm} — занято ({count})";
+                    ? $"{slot.StartTime:hh\\:mm} — свободное"
+                    : $"{slot.StartTime:hh\\:mm} — есть брони ({count})";
 
                 buttons.Add(new[]
                 {
@@ -799,20 +776,6 @@ public class AdminBotController
             parseMode: ParseMode.Html,
             replyMarkup: buttons);
     }
-    private async Task ShowTimeSlotsAdminCalendar(long chatId, AdminSession session)
-    {
-        if (session.CurrentMonth == default)
-            session.CurrentMonth = DateTime.Today;
-        _adminSessionStorage.SaveSession(session);
-
-        var buttons = await BuildAdminCalendarWithBookingsAsync(session.CurrentMonth);
-        await _adminBotClient.SendTextMessageAsync(chatId,
-            $"<b>Выберите дату:</b>\n\n{session.CurrentMonth.ToString("MMMM yyyy", _ruCulture)}",
-            parseMode: ParseMode.Html,
-            replyMarkup: buttons);
-    }
-
-
 
     private async Task<InlineKeyboardMarkup> BuildAdminCalendarAsync(DateTime month)
     {
@@ -1006,121 +969,8 @@ public class AdminBotController
             ParseMode.Html,
             replyMarkup: buttons
         );
+
     }
-
-
-
-
-    private async Task<InlineKeyboardMarkup> BuildAdminCalendarWithBookingsAsync(DateTime month)
-    {
-        var buttons = new List<InlineKeyboardButton[]>();
-
-        // Month navigation
-        buttons.Add(new[]
-        {
-        InlineKeyboardButton.WithCallbackData("⬅️", "prev_month"),
-        InlineKeyboardButton.WithCallbackData($"{month.ToString("MMMM yyyy", _ruCulture)}", "ignore"),
-        InlineKeyboardButton.WithCallbackData("➡️", "next_month")
-    });
-
-        // Weekday headers
-        buttons.Add(new[]
-        {
-        InlineKeyboardButton.WithCallbackData("Пн", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Вт", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Ср", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Чт", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Пт", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Сб", "ignore"),
-        InlineKeyboardButton.WithCallbackData("Вс", "ignore")
-    });
-
-        int daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
-        int firstDay = ((int)new DateTime(month.Year, month.Month, 1).DayOfWeek + 6) % 7 + 1;
-        int dayCounter = 1;
-
-        var allSlots = await _repository.GetAllTimeSlotsAsync();
-
-        for (int week = 0; week < 6; week++)
-        {
-            var row = new List<InlineKeyboardButton>();
-            for (int dow = 1; dow <= 7; dow++)
-            {
-                if ((week == 0 && dow < firstDay) || dayCounter > daysInMonth)
-                {
-                    row.Add(InlineKeyboardButton.WithCallbackData(" ", "ignore"));
-                }
-                else
-                {
-                    var date = new DateTime(month.Year, month.Month, dayCounter);
-
-                    // Past dates → disable
-                    if (date < DateTime.Today)
-                    {
-                        row.Add(InlineKeyboardButton.WithCallbackData("🚫", "ignore"));
-                        dayCounter++;
-                        continue;
-                    }
-
-                    // Check if there are any bookings for this date
-                    var slotsForDate = allSlots
-                        .Where(s => s.Date.Date == date.Date && s.IsActive)
-                        .ToList();
-
-                    bool hasBooking = false;
-                    foreach (var slot in slotsForDate)
-                    {
-                        var count = await _repository.GetBookingCountForSlotAsync(slot.Date, slot.StartTime);
-                        if (count > 0)
-                        {
-                            hasBooking = true;
-                            break;
-                        }
-                    }
-
-                    string label = hasBooking ? $"✅ {date.Day}" : date.Day.ToString();
-                    row.Add(InlineKeyboardButton.WithCallbackData(label, $"admin_slot_date_{date:yyyy-MM-dd}"));
-
-                    dayCounter++;
-                }
-            }
-
-            buttons.Add(row.ToArray());
-        }
-
-        return new InlineKeyboardMarkup(buttons);
-    }
-
-
-    private async Task ShowTimeSlotsForDay(long chatId, DateTime date)
-    {
-        var slots = await _repository.GetAllTimeSlotsAsync();
-        var daySlots = slots.Where(s => s.Date.Date == date.Date).OrderBy(s => s.StartTime).ToList();
-
-        if (!daySlots.Any())
-        {
-            await _adminBotClient.SendTextMessageAsync(chatId, "Окон на этот день нет.");
-            return;
-        }
-
-        var buttons = new List<InlineKeyboardButton[]>();
-        foreach (var slot in daySlots)
-        {
-            var count = await _repository.GetBookingCountForSlotAsync(slot.Date, slot.StartTime);
-            string label = count == 0 ? $"{slot.StartTime:hh\\:mm} — свободно" : $"{slot.StartTime:hh\\:mm} — занято ({count})";
-            buttons.Add(new[] { InlineKeyboardButton.WithCallbackData(label, $"edit_timeslot_{slot.Id}") });
-        }
-
-        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "show_timeslots") });
-
-        await _adminBotClient.SendTextMessageAsync(chatId,
-            $"<b>Слоты на {date:dd.MM.yyyy}</b>",
-            parseMode: ParseMode.Html,
-            replyMarkup: new InlineKeyboardMarkup(buttons));
-    }
-
-
-
 
     #endregion
 }
