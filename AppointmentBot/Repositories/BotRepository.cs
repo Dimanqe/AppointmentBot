@@ -132,7 +132,7 @@ public class BotRepository
             .Include(b => b.BookingServices)
             .ThenInclude(bs => bs.Service)
             .Where(b => b.UserId == userId)
-            .OrderByDescending(b => b.Date)
+            .OrderBy(b => b.Date)
             .ToListAsync();
     }
 
