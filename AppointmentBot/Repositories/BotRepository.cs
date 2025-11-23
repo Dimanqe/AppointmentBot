@@ -3,6 +3,7 @@
 using AppointmentBot.Clients;
 using AppointmentBot.Data;
 using AppointmentBot.Models;
+using AppointmentBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using User = Telegram.Bot.Types.User;

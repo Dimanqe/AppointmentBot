@@ -2,9 +2,9 @@
 
 using AppointmentBot.Clients;
 using AppointmentBot.Helpers;
-using AppointmentBot.Models;
 using AppointmentBot.Repositories;
-using AppointmentBot.Services;
+using AppointmentBot.Storage;
+using AppointmentBot.Storage.Models;
 using System.Globalization;
 using System.Reflection.Emit;
 using System.Text.Json;
@@ -678,9 +678,13 @@ public class InlineKeyboardController
             $"🏠 Студия: {studio.Name}\n" +
             $"👩‍🎨 Мастер: Арина\n" +
             $"📍 Адрес: {studio.Address}\n" +
-            $"⏱️ Продолжительность: {totalDuration.Hours} ч. {totalDuration.Minutes} м.\n" +
-            $"💰 Стоимость: {totalCost}₽\n\n" +
+            $"📞 Телефон: {studio.Phone}\n" +
+            $"✈️ Telegram: {studio.Telegram}\n" +
+            $"📸 Instagram: {studio.Instagram}\n\n" +
+         
             $"🧾 Услуги: {services}\n" +
+            $"💰 Стоимость: {totalCost}₽\n" +
+            $"⏱️ Продолжительность: {totalDuration.Hours} ч. {totalDuration.Minutes} м.\n" +
             $"📅 Дата: {date}\n" +
             $"⏰ Время: {time}\n";
     }

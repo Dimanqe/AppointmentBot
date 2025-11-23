@@ -1,7 +1,6 @@
 ﻿#region
 
 using AppointmentBot.Models;
-using AppointmentBot.Services;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using AppointmentBot.Configuration;
@@ -10,6 +9,8 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using AppointmentBot.Repositories;
+using AppointmentBot.Storage;
+using AppointmentBot.Storage.Models;
 
 #endregion
 
@@ -66,57 +67,74 @@ public class AdminBotController
         var adminId = callbackQuery.From.Id;
         var session = _adminSessionStorage.GetOrCreateSession(adminId);
 
+       var replyMarkup = new InlineKeyboardMarkup(new[]
+        {
+            //new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "admin_settings") },
+            new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") }
+        });
+       
+
         switch (callbackQuery.Data)
         {
             case "admin_main":
                 await ShowAdminMainMenu(callbackQuery);
                 return;
             case "admin_settings":
-                await ShowStudioSettings(chatId);
+                await ShowStudioSettings(chatId, callbackQuery.Message.MessageId);
+                return;
+            case "edit_studio_name":
+                session.ActionType = "edit_studio_name";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новое название студии:",replyMarkup: replyMarkup);
                 return;
 
             case "edit_studio_address":
                 session.ActionType = "edit_studio_address";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый адрес студии:");
-                return;
-
-            case "edit_studio_name":
-                session.ActionType = "edit_studio_name";
-                _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новое название студии:");
+                await _adminBotClient.EditMessageTextAsync(chatId,session.LastBotMessageId, "Введите новый адрес студии:", replyMarkup: replyMarkup);
                 return;
 
             case "edit_studio_phone":
                 session.ActionType = "edit_studio_phone";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый телефон студии:");
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новый телефон студии:", replyMarkup: replyMarkup);
                 return;
 
+            case "edit_studio_telegram":
+                session.ActionType = "edit_studio_telegram";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
+                _adminSessionStorage.SaveSession(session);
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новый Telegram студии:", replyMarkup: replyMarkup);
+                return;
             case "edit_studio_instagram":
                 session.ActionType = "edit_studio_instagram";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новый Instagram студии:");
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новый Instagram студии:", replyMarkup: replyMarkup);
                 return;
 
             case "edit_studio_description":
                 session.ActionType = "edit_studio_description";
+                session.LastBotMessageId = callbackQuery.Message.MessageId;
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите новое описание студии:");
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новое описание студии:", replyMarkup: replyMarkup);
                 return;
 
             case "admin_services":
-                await ShowServices(chatId);
+                await ShowServices(chatId, callbackQuery.Message.MessageId);
                 return;
             case "admin_add_service":
                 _adminSessionStorage.SetSelectedService(adminId, -1);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите имя новой услуги:");
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите имя новой услуги:", replyMarkup: replyMarkup);
                 return;
             case "admin_bookings":
-                await ShowAllBookings(chatId);
+                await ShowAllBookings(callbackQuery);
                 return;
             case "show_timeslots":
-                await ShowTimeSlotsAdminCalendar(chatId, session);
+                await ShowTimeSlotsAdminCalendar(callbackQuery, session);
                 return;
             case "send_all_slots":
                 await _repository.SendAllFreeSlotsAsync(callbackQuery.Message.Chat.Id);
@@ -124,12 +142,12 @@ public class AdminBotController
             case "prev_month":
                 session.CurrentMonth = session.CurrentMonth.AddMonths(-1);
                 _adminSessionStorage.SaveSession(session);
-                await ShowAdminCalendar(chatId, session);
+                await ShowAdminCalendar(callbackQuery, session);
                 return;
             case "next_month":
                 session.CurrentMonth = session.CurrentMonth.AddMonths(1);
                 _adminSessionStorage.SaveSession(session);
-                await ShowAdminCalendar(chatId, session);
+                await ShowAdminCalendar(callbackQuery, session);
                 return;
         }
 
@@ -138,27 +156,41 @@ public class AdminBotController
         if (callbackQuery.Data.StartsWith("service_"))
         {
             var serviceId = int.Parse(callbackQuery.Data.Replace("service_", ""));
-            await ShowServiceOptions(callbackQuery, serviceId);
+            await ShowServiceOptions(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId, serviceId);
             return;
         }
 
         if (callbackQuery.Data.StartsWith("edit_price_"))
         {
             var serviceId = int.Parse(callbackQuery.Data.Replace("edit_price_", ""));
+         
+
+            var replyMarkupEditPrice = new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", $"service_{serviceId}")},
+                new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") }
+            });
             session.TempServiceId = serviceId;
             session.ActionType = "price";
+            session.LastBotMessageId = callbackQuery.Message.MessageId;
             _adminSessionStorage.SaveSession(session);
-            await _adminBotClient.SendTextMessageAsync(chatId, "Введите новую цену услуги:");
+            await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новую цену услуги:", replyMarkup: replyMarkupEditPrice);
             return;
         }
 
         if (callbackQuery.Data.StartsWith("edit_duration_"))
         {
             var serviceId = int.Parse(callbackQuery.Data.Replace("edit_duration_", ""));
+            var replyMarkupEditDuration = new InlineKeyboardMarkup(new[]
+            {
+                new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", $"service_{serviceId}")},
+                new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") }
+            });
             session.TempServiceId = serviceId;
             session.ActionType = "duration";
+            session.LastBotMessageId = callbackQuery.Message.MessageId;
             _adminSessionStorage.SaveSession(session);
-            await _adminBotClient.SendTextMessageAsync(chatId, "Введите новую продолжительность услуги (в минутах):");
+            await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новую продолжительность услуги (в минутах):", replyMarkup: replyMarkupEditDuration);
             return;
         }
 
@@ -167,7 +199,7 @@ public class AdminBotController
             var serviceId = int.Parse(callbackQuery.Data.Replace("delete_service_", ""));
             await _repository.DeleteServiceAsync(serviceId);
             await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Услуга удалена");
-            await ShowServices(chatId);
+            await ShowServices(chatId, callbackQuery.Message.MessageId);
             return;
         }
 
@@ -228,7 +260,7 @@ public class AdminBotController
                 // Pass the message ID to edit the same message
                 //await ShowAdminTimePicker(chatId, session, callbackQuery.Message.MessageId);
 
-                await ShowTimeSlotsForDay(chatId, date);
+                await ShowTimeSlotsForDay(callbackQuery, date);
             }
             else
             {
@@ -263,12 +295,12 @@ public class AdminBotController
                 await _repository.AddTimeSlotAsync(newSlot);
 
                 await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Окно добавлено!");
-                await _adminBotClient.SendTextMessageAsync(chatId,
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId,
                     $"✅ Новое окно добавлено:\n📅 {session.TempSlotDate.Value:dd.MM.yyyy}\n⏰ {time:hh\\:mm}");
 
                 session.TempSlotDate = null;
                 _adminSessionStorage.SaveSession(session);
-                await ShowTimeSlotsAdminCalendar(chatId, session);
+                await ShowTimeSlotsAdminCalendar(callbackQuery, session);
             }
             else
             {
@@ -320,7 +352,7 @@ public class AdminBotController
             session.TempSlotDate = null;
             _adminSessionStorage.SaveSession(session);
 
-            await ShowTimeSlotsAdminCalendar(chatId, session);
+            await ShowTimeSlotsAdminCalendar(callbackQuery, session);
         }
 
 
@@ -339,7 +371,7 @@ public class AdminBotController
             var slotId = int.Parse(callbackQuery.Data.Replace("delete_timeslot_", ""));
             await _repository.DeleteTimeSlotAsync(slotId);
             await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Окно удалёно");
-            await ShowTimeSlotsAdminCalendar(chatId, session);
+            await ShowTimeSlotsAdminCalendar(callbackQuery, session);
         }
     }
 
@@ -349,10 +381,10 @@ public class AdminBotController
 
     public async Task HandleAdminMessage(Message message, CancellationToken ct)
     {
+        
         if (!_admins.Contains(message.From.Id))
         {
-            await _adminBotClient.SendTextMessageAsync(
-                message.Chat.Id,
+            await _adminBotClient.EditMessageTextAsync(message.Chat.Id, message.MessageId,
                 "⛔ Доступ запрещён. Этот бот только для админов."
             );
             return;
@@ -382,7 +414,7 @@ public class AdminBotController
             session.TempServiceName = message.Text;
             _adminSessionStorage.SetSelectedService(adminId, 1); // move to "waiting for price"
             _adminSessionStorage.SaveSession(session);
-            await _adminBotClient.SendTextMessageAsync(chatId, "Введите цену для новой услуги (в ₽):");
+            await _adminBotClient.EditMessageTextAsync(chatId, message.MessageId, "Введите цену для новой услуги (в ₽):");
             return;
         }
 
@@ -394,11 +426,11 @@ public class AdminBotController
                 session.TempServicePrice = price;
                 _adminSessionStorage.SetSelectedService(adminId, 2); // move to "waiting for duration"
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.SendTextMessageAsync(chatId, "Введите продолжительность услуги (в минутах):");
+                await _adminBotClient.EditMessageTextAsync(chatId, message.MessageId, "Введите продолжительность услуги (в минутах):");
             }
             else
             {
-                await _adminBotClient.SendTextMessageAsync(chatId, "🚫 Некорректная цена. Введите число:");
+                await _adminBotClient.EditMessageTextAsync(chatId, message.MessageId, "🚫 Некорректная цена. Введите число:");
             }
 
             return;
@@ -427,12 +459,12 @@ public class AdminBotController
                 session.TempServicePrice = null;
                 _adminSessionStorage.SaveSession(session);
 
-                await _adminBotClient.SendTextMessageAsync(chatId, $"✅ Услуга «{service.Name}» успешно добавлена!");
-                await ShowServices(chatId);
+                await _adminBotClient.EditMessageTextAsync(chatId, message.MessageId, $"✅ Услуга «{service.Name}» успешно добавлена!");
+                await ShowServices(chatId, message.MessageId);
             }
             else
             {
-                await _adminBotClient.SendTextMessageAsync(chatId,
+                await _adminBotClient.EditMessageTextAsync(chatId, message.MessageId,
                     "🚫 Некорректная продолжительность. Введите число в минутах:");
             }
         }
@@ -448,11 +480,18 @@ public class AdminBotController
                 if (int.TryParse(message.Text, out var newPrice))
                 {
                     await _repository.UpdateServicePriceAsync(serviceId, newPrice);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Цена обновлена!");
+                    await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Цена обновлена!");
+                    await Task.Delay(1000);
+                    await _adminBotClient.DeleteMessageAsync(message.Chat.Id, message.MessageId);
+                    await ShowServiceOptions(chatId, session.LastBotMessageId, serviceId);
+                    //await ShowServices(chatId, session.LastBotMessageId);
+                    _adminSessionStorage.SaveSession(session);
+                    return;
                 }
                 else
                 {
-                    await _adminBotClient.SendTextMessageAsync(chatId, "🚫 Некорректная цена. Введите число:");
+                    await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "🚫 Некорректная цена. Введите число:");
+                    _adminSessionStorage.SaveSession(session);
                     return;
                 }
             }
@@ -461,12 +500,20 @@ public class AdminBotController
                 if (int.TryParse(message.Text, out var newDuration))
                 {
                     await _repository.UpdateServiceDurationAsync(serviceId, newDuration);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Продолжительность обновлена!");
+                    await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Продолжительность обновлена!");
+                    await Task.Delay(1000);
+                    await _adminBotClient.DeleteMessageAsync(message.Chat.Id, message.MessageId);
+                    await ShowServiceOptions(chatId, session.LastBotMessageId, serviceId);
+                    await ShowServices(chatId, session.LastBotMessageId);
+                    _adminSessionStorage.SaveSession(session);
+                    return;
                 }
                 else
                 {
-                    await _adminBotClient.SendTextMessageAsync(chatId,
+                    await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId,
+
                         "🚫 Некорректная продолжительность. Введите число:");
+                    _adminSessionStorage.SaveSession(session);
                     return;
                 }
             }
@@ -475,8 +522,9 @@ public class AdminBotController
             session.TempServiceId = null;
             session.ActionType = null;
             _adminSessionStorage.SaveSession(session);
+           
 
-            await ShowServices(chatId);
+            await ShowServices(chatId,message.MessageId);
         }
 
         // Handle other cases (editing price/duration etc.) here...
@@ -485,71 +533,91 @@ public class AdminBotController
         {
             case "edit_studio_address":
                 {
+                    await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
                     var studio = await _repository.GetStudioAsync();
                     studio.Address = message.Text;
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Адрес обновлён!");
-                    await ShowStudioSettings(chatId);
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Адрес обновлён!");
+                    //await Task.Delay(1500);
+                    await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
 
             case "edit_studio_name":
                 {
+                    await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
                     var studio = await _repository.GetStudioAsync();
                     studio.Name = message.Text;
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Название обновлено!");
-                    await ShowStudioSettings(chatId);
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Название обновлено!");
+                    //await Task.Delay(1500);
+                    await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
 
             case "edit_studio_phone":
                 {
+                    await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
                     var studio = await _repository.GetStudioAsync();
                     studio.Phone = message.Text;
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Телефон обновлён!");
-                    await ShowStudioSettings(chatId);
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Телефон обновлён!");
+                    //await Task.Delay(1500);
+                    await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
 
             case "edit_studio_instagram":
                 {
+                    await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
                     var studio = await _repository.GetStudioAsync();
                     studio.Instagram = message.Text;
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Instagram обновлён!");
-                    await ShowStudioSettings(chatId);
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Instagram обновлён!");
+                    await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
+            case "edit_studio_telegram":
+            {
+                await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
+                var studio = await _repository.GetStudioAsync();
+                studio.Telegram = message.Text;
+                await _repository.UpdateStudioAsync(studio);
+                session.ActionType = null;
+                _adminSessionStorage.SaveSession(session);
+                //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Telegram обновлён!");
+                await ShowStudioSettings(chatId, session.LastBotMessageId);
+                return;
+            }
 
             case "edit_studio_description":
                 {
+                    await _adminBotClient.DeleteMessageAsync(chatId, message.MessageId);
                     var studio = await _repository.GetStudioAsync();
                     studio.Description = message.Text;
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    await _adminBotClient.SendTextMessageAsync(chatId, "✅ Описание обновлено!");
-                    await ShowStudioSettings(chatId);
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Описание обновлено!");
+                    await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
         }
-
+       
     }
 
     #endregion
 
     #region Admin Menus & Services
-    private async Task ShowStudioSettings(long chatId)
+    private async Task ShowStudioSettings(long chatId, int messageId)
     {
         var studio = await _repository.GetStudioAsync();
 
@@ -558,21 +626,24 @@ public class AdminBotController
             $"🏷 Название: {studio.Name}\n" +
             $"📍 Адрес: {studio.Address}\n" +
             $"📞 Телефон: {studio.Phone}\n" +
+            $"✈️ Telegram: {studio.Telegram}\n" +
             $"📸 Instagram: {studio.Instagram}\n" +
             $"📝 Описание: {studio.Description}";
 
         var buttons = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData("📍 Изменить адрес", "edit_studio_address") },
             new[] { InlineKeyboardButton.WithCallbackData("🏷 Изменить название студии", "edit_studio_name") },
+            new[] { InlineKeyboardButton.WithCallbackData("📍 Изменить адрес", "edit_studio_address") },
             new[] { InlineKeyboardButton.WithCallbackData("📞 Изменить телефон", "edit_studio_phone") },
+            new[] { InlineKeyboardButton.WithCallbackData("✈️ Изменить Telegram", "edit_studio_telegram") },
             new[] { InlineKeyboardButton.WithCallbackData("📸 Изменить Instagram", "edit_studio_instagram") },
             new[] { InlineKeyboardButton.WithCallbackData("📝 Изменить описание", "edit_studio_description") },
             new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "admin_main") }
         });
 
-        await _adminBotClient.SendTextMessageAsync(
+        await _adminBotClient.EditMessageTextAsync(
             chatId: chatId,
+            messageId: messageId,
             text: text,
             parseMode: ParseMode.Html,
             replyMarkup: buttons
@@ -602,13 +673,13 @@ public class AdminBotController
             new[] { InlineKeyboardButton.WithCallbackData("⚙️ Настройки студии", "admin_settings") }
         });
 
-        await _adminBotClient.SendTextMessageAsync(chatId,
+        await _adminBotClient.EditMessageTextAsync(chatId,callbackQuery.Message.MessageId,
             "<b>Админ панель</b>\nВыберите действие:",
             parseMode: ParseMode.Html,
             replyMarkup: buttons);
     }
 
-    private async Task ShowServices(long chatId)
+    private async Task ShowServices(long chatId, int messageId)
     {
         var services = await _repository.GetAvailableServicesAsync();
         var messageText = "<b>Управление услугами</b>\n\n";
@@ -621,11 +692,11 @@ public class AdminBotController
         buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("➕ Добавить услугу", "admin_add_service") });
         buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") });
 
-        await _adminBotClient.SendTextMessageAsync(chatId, messageText,
+        await _adminBotClient.EditMessageTextAsync(chatId,messageId, messageText,
             parseMode: ParseMode.Html, replyMarkup: new InlineKeyboardMarkup(buttons));
     }
 
-    private async Task ShowServiceOptions(CallbackQuery callbackQuery, int serviceId)
+    private async Task ShowServiceOptions(long chatId,int messageId, int serviceId)
     {
         var service = await _repository.GetServiceByIdAsync(serviceId);
         if (service == null) return;
@@ -633,27 +704,24 @@ public class AdminBotController
         var buttons = new InlineKeyboardMarkup(new[]
         {
             new[] { InlineKeyboardButton.WithCallbackData("💰 Изменить цену", $"edit_price_{service.Id}") },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData("⏱ Изменить продолжительность", $"edit_duration_{service.Id}")
-            },
+            new[] { InlineKeyboardButton.WithCallbackData("⏱ Изменить продолжительность", $"edit_duration_{service.Id}") },
             new[] { InlineKeyboardButton.WithCallbackData("❌ Удалить услугу", $"delete_service_{service.Id}") },
             new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "admin_services") }
         });
 
-        await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id,
-            callbackQuery.Message.MessageId,
+        await _adminBotClient.EditMessageTextAsync(chatId,
+            messageId,
             $"<b>{service.Name}</b>\nТекущая цена: {service.Price}₽\nПродолжительность: {service.DurationMinutes} мин",
             ParseMode.Html,
             replyMarkup: buttons);
     }
 
-    private async Task ShowAllBookings(long chatId)
+    private async Task ShowAllBookings(CallbackQuery callbackQuery)
     {
         var bookings = await _repository.GetAllBookingsAsync();
         if (!bookings.Any())
         {
-            await _adminBotClient.SendTextMessageAsync(chatId, "Записей пока нет.");
+            await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id,callbackQuery.Message.MessageId, "Записей пока нет.");
             return;
         }
 
@@ -666,7 +734,7 @@ public class AdminBotController
             }).ToList();
         buttons.Add(new[] { InlineKeyboardButton.WithCallbackData("🏠 Главное меню", "admin_main") });
 
-        await _adminBotClient.SendTextMessageAsync(chatId,
+        await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
             "<b>Все записи</b>\nВыберите запись для управления:",
             parseMode: ParseMode.Html,
             replyMarkup: new InlineKeyboardMarkup(buttons));
@@ -715,14 +783,14 @@ public class AdminBotController
         await _adminBotClient.AnswerCallbackQueryAsync(callbackQuery.Id, "✅ Запись отменена!");
         try
         {
-            await _adminBotClient.SendTextMessageAsync(booking.User.Id,
+            await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
                 $"❌ Запись на {booking.Date:dd.MM.yyyy} {booking.TimeSlot} была отменена.");
         }
         catch
         {
         }
 
-        await ShowAllBookings(callbackQuery.Message.Chat.Id);
+        await ShowAllBookings(callbackQuery);
     }
 
     #endregion
@@ -787,26 +855,26 @@ public class AdminBotController
     //}
 
 
-    private async Task ShowAdminCalendar(long chatId, AdminSession session)
+    private async Task ShowAdminCalendar(CallbackQuery callbackQuery, AdminSession session)
     {
         if (session.CurrentMonth == default)
             session.CurrentMonth = DateTime.Today;
         _adminSessionStorage.SaveSession(session);
 
         var buttons = await BuildAdminCalendarAsync(session.CurrentMonth);
-        await _adminBotClient.SendTextMessageAsync(chatId,
+        await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
             $"<b>Выберите дату:</b>\n\n{session.CurrentMonth.ToString("MMMM yyyy", _ruCulture)}",
             parseMode: ParseMode.Html,
             replyMarkup: buttons);
     }
-    private async Task ShowTimeSlotsAdminCalendar(long chatId, AdminSession session)
+    private async Task ShowTimeSlotsAdminCalendar(CallbackQuery callbackQuery, AdminSession session)
     {
         if (session.CurrentMonth == default)
             session.CurrentMonth = DateTime.Today;
         _adminSessionStorage.SaveSession(session);
 
         var buttons = await BuildAdminCalendarWithBookingsAsync(session.CurrentMonth);
-        await _adminBotClient.SendTextMessageAsync(chatId,
+        await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
             $"<b>Выберите дату:</b>\n\n{session.CurrentMonth.ToString("MMMM yyyy", _ruCulture)}",
             parseMode: ParseMode.Html,
             replyMarkup: buttons);
@@ -1103,7 +1171,7 @@ public class AdminBotController
     }
 
 
-    private async Task ShowTimeSlotsForDay(long chatId, DateTime date)
+    private async Task ShowTimeSlotsForDay(CallbackQuery callbackQuery, DateTime date)
     {
         var slots = await _repository.GetAllTimeSlotsAsync();
         var daySlots = slots.Where(s => s.Date.Date == date.Date).OrderBy(s => s.StartTime).ToList();
@@ -1133,7 +1201,7 @@ public class AdminBotController
             InlineKeyboardButton.WithCallbackData("⬅️ Назад", "show_timeslots")
         });
 
-        await _adminBotClient.SendTextMessageAsync(chatId,
+        await _adminBotClient.EditMessageTextAsync(callbackQuery.Message.Chat.Id,callbackQuery.Message.MessageId, 
             $"<b>Окошки на {date:dd.MM.yyyy}</b>",
             parseMode: ParseMode.Html,
             replyMarkup: new InlineKeyboardMarkup(buttons));

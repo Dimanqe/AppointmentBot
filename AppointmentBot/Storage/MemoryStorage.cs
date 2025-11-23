@@ -1,11 +1,11 @@
 ﻿#region
 
 using System.Collections.Concurrent;
-using AppointmentBot.Models;
+using AppointmentBot.Storage.Models;
 
 #endregion
 
-namespace AppointmentBot.Services;
+namespace AppointmentBot.Storage;
 
 public class MemoryUserSessionStorage : IUserSessionStorage
 {

@@ -7,6 +7,7 @@ using AppointmentBot.Controllers;
 using AppointmentBot.Data;
 using AppointmentBot.Repositories;
 using AppointmentBot.Services;
+using AppointmentBot.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -1,4 +1,4 @@
-﻿namespace AppointmentBot.Services;
+﻿namespace AppointmentBot.Storage.Models;
 
 public class AdminSession
 {
@@ -20,5 +20,5 @@ public class AdminSession
     public DateTime CurrentMonth { get; set; } = DateTime.Today;
 
     public List<TimeSpan> SelectedTimes { get; set; } = new();
-    public int? TempTimePickerMessageId { get; set; }
+    public int LastBotMessageId { get; set; }
 }

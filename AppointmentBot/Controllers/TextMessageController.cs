@@ -3,6 +3,8 @@ using AppointmentBot.Helpers;
 using AppointmentBot.Models;
 using AppointmentBot.Repositories;
 using AppointmentBot.Services;
+using AppointmentBot.Storage;
+using AppointmentBot.Storage.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;

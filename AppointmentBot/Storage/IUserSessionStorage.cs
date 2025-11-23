@@ -1,10 +1,12 @@
-﻿#region
+﻿
 
-using AppointmentBot.Models;
+#region
+
+using AppointmentBot.Storage.Models;
 
 #endregion
 
-namespace AppointmentBot.Services;
+namespace AppointmentBot.Storage;
 
 public interface IUserSessionStorage
 {

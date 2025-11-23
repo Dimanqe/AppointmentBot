@@ -1,4 +1,6 @@
-﻿namespace AppointmentBot.Services;
+﻿using AppointmentBot.Storage.Models;
+
+namespace AppointmentBot.Storage;
 
 public interface IAdminSessionStorage
 {

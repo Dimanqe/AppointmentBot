@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 #endregion
 
-namespace AppointmentBot.Models;
+namespace AppointmentBot.Storage.Models;
 
 public class UserSession
 {

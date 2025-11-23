@@ -1,6 +1,7 @@
 ﻿#region
 
 using AppointmentBot.Models;
+using AppointmentBot.Services;
 using Microsoft.EntityFrameworkCore;
 
 #endregion

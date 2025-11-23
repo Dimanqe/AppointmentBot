@@ -1,4 +1,6 @@
-﻿namespace AppointmentBot.Models;
+﻿using AppointmentBot.Models;
+
+namespace AppointmentBot.Services;
 
 public class BookingService
 {

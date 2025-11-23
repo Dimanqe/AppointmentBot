@@ -13,6 +13,7 @@ namespace AppointmentBot.Models
         public string Name { get; set; } = "Студия красоты";
         public string Address { get; set; } = "Адрес не указан";
         public string Phone { get; set; } = "Телефон не указан";
+        public string Telegram { get; set; } = "";
         public string Instagram { get; set; } = "";
         public string Description { get; set; } = "";
     }
