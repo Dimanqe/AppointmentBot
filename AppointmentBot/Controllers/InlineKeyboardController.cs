@@ -680,7 +680,7 @@ public class InlineKeyboardController
             $"📍 Адрес: {studio.Address}\n" +
             $"📞 Телефон: {studio.Phone}\n" +
             $"✈️ Telegram: {studio.Telegram}\n" +
-            $"📸 Instagram: {studio.Instagram}\n\n" +
+            $"📸 Нельзяграм: {studio.Instagram}\n\n" +
          
             $"🧾 Услуги: {services}\n" +
             $"💰 Стоимость: {totalCost}₽\n" +

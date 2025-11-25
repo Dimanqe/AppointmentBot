@@ -113,7 +113,7 @@ public class AdminBotController
                 session.ActionType = "edit_studio_instagram";
                 session.LastBotMessageId = callbackQuery.Message.MessageId;
                 _adminSessionStorage.SaveSession(session);
-                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новый Instagram студии:", replyMarkup: replyMarkup);
+                await _adminBotClient.EditMessageTextAsync(chatId, callbackQuery.Message.MessageId, "Введите новый Нельзяграм студии:", replyMarkup: replyMarkup);
                 return;
 
             case "edit_studio_description":
@@ -581,7 +581,7 @@ public class AdminBotController
                     await _repository.UpdateStudioAsync(studio);
                     session.ActionType = null;
                     _adminSessionStorage.SaveSession(session);
-                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Instagram обновлён!");
+                    //await _adminBotClient.EditMessageTextAsync(chatId, session.LastBotMessageId, "✅ Нельзяграм обновлён!");
                     await ShowStudioSettings(chatId, session.LastBotMessageId);
                     return;
                 }
@@ -627,7 +627,7 @@ public class AdminBotController
             $"📍 Адрес: {studio.Address}\n" +
             $"📞 Телефон: {studio.Phone}\n" +
             $"✈️ Telegram: {studio.Telegram}\n" +
-            $"📸 Instagram: {studio.Instagram}\n" +
+            $"📸 Нельзяграм: {studio.Instagram}\n" +
             $"📝 Описание: {studio.Description}";
 
         var buttons = new InlineKeyboardMarkup(new[]
@@ -636,7 +636,7 @@ public class AdminBotController
             new[] { InlineKeyboardButton.WithCallbackData("📍 Изменить адрес", "edit_studio_address") },
             new[] { InlineKeyboardButton.WithCallbackData("📞 Изменить телефон", "edit_studio_phone") },
             new[] { InlineKeyboardButton.WithCallbackData("✈️ Изменить Telegram", "edit_studio_telegram") },
-            new[] { InlineKeyboardButton.WithCallbackData("📸 Изменить Instagram", "edit_studio_instagram") },
+            new[] { InlineKeyboardButton.WithCallbackData("📸 Изменить Нельзяграм", "edit_studio_instagram") },
             new[] { InlineKeyboardButton.WithCallbackData("📝 Изменить описание", "edit_studio_description") },
             new[] { InlineKeyboardButton.WithCallbackData("⬅️ Назад", "admin_main") }
         });
